@@ -65,6 +65,11 @@
   .recon span { font: 600 18px ui-monospace, Menlo, monospace; }
   .recon .zero span { color: var(--req); }
   tr.total td { font-weight: 700; border-top: 2px solid var(--ink); }
+  .reflection h3 { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .reflection h3:first-of-type { border-top: 0; padding-top: 0; }
+  .reflection p, .reflection li { line-height: 1.6; }
+  .reflection ol li, .reflection ul li { margin: 8px 0; }
+  .reflection a { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -394,7 +399,75 @@
 </section>
 
 <section role="tabpanel" id="panel-reflection" aria-labelledby="tab-reflection" hidden>
-  <div class="card placeholder">Coming later.</div>
+  <div class="card reflection">
+    <h2>Reflection</h2>
+    <p class="muted">Evidence on this page: the <a href="#101">Ticket 101</a>, <a href="#102">Ticket 102</a> and <a href="#103">Ticket 103</a> tabs (Expected vs Actual) and the <a href="#cash">Cash</a> tab. "seq" numbers point into <code>output/audit_trail.json</code> (the Problem 9 run is seq 484–648).</p>
+
+    <!-- ============================================================ Q1 -->
+    <h3>1. How I would evaluate the agents on each ticket, and why</h3>
+    <p>I graded each ticket on five things, in this order. I'm running a shop, not a demo, so getting the money and the customer right matters more than speed:</p>
+    <ol>
+      <li><b>Right decision:</b> is the call correct given what's actually in the database?</li>
+      <li><b>Money safety:</b> did cash move only after my approval, by exactly the right amount?</li>
+      <li><b>Customer outcome:</b> is the draft honest, specific and free of internal details?</li>
+      <li><b>Efficiency:</b> MCP calls and runs versus my plan.</li>
+      <li><b>Robustness:</b> did anything fail, and was the failure visible?</li>
+    </ol>
+    <table>
+      <tr><th>Ticket</th><th>Decision</th><th>Money</th><th>Customer</th><th>Efficiency</th><th>Robustness</th><th>Overall</th></tr>
+      <tr><td>103</td><td>A</td><td>A ($0.00 moved)</td><td>A−</td><td>B (17 calls vs ~7, 1 run)</td><td>A− (one validator retry)</td><td><b>Best</b></td></tr>
+      <tr><td>101</td><td>A</td><td>A ($840.00, approved)</td><td>A</td><td>C (19 calls vs ~7, 2 runs)</td><td>C (first run hung 13 min)</td><td>Middle</td></tr>
+      <tr><td>102</td><td>B+</td><td>A ($2,400.00, approved)</td><td>n/a</td><td>C (12 calls vs ~5, 2 runs)</td><td>D (final run crashed)</td><td><b>Weakest</b></td></tr>
+    </table>
+    <p><b>Why 103 is the best.</b> It was the hardest ticket and the team handled it in one run with zero cash movement. Inventory found 8 of 20 size M hoodies (short 12). Accounting priced three scenarios with <code>get_pricing</code>: 20 at 15% = $49.30/unit, 8 at 0%, and 12 at 15%. It saw that the $264.00 restock (12 × $22) didn't fit in the $160.00 left after tickets 101 and 102, a $104 gap, and <i>didn't</i> file a purchase order. That is the restraint I want from an agent with access to a payment tool. The Boss then made a clear call: offer the 8 at $58 ($464), with no discount, because 8 is under the 10-unit bulk minimum. Customer Service checked the $58 price with <code>get_pricing</code> before saving draft #3. I'm marking it down slightly for two reasons. First, it only reached <code>resolved</code> because we changed the Boss prompt before the run so that a cash shortfall is a final answer (see the 103 tab's note). Second, Accounting re-checked vendor status and the ticket after Inventory had already reported them.</p>
+    <p><b>Why 101 is in the middle.</b> The smartest moment of the whole run happened here. Inventory read invoice 501's description, "Rush reprint CC-TEE-WHITE S", and realised that the unpaid $840 invoice <i>was</i> the reprint of the exact tee Tauhid wanted. So the fix was to pay that invoice, not to place a second order. Accounting also respected the cash queue: it confirmed rent ($2,400, due in 2 days) comes first and that 501 still fit ($3,400 → $2,560 → $160). It loses points on process. The first run hung for about 13 minutes after the Boss's <code>update_ticket</code> (seq 526) because the model client had no timeout, and closing the ticket took a second run. Across both runs it used 19 MCP calls against my ~7.</p>
+    <p><b>Why 102 is the weakest, even though it was the easiest ticket.</b> The work itself was right: Facilities checked landlord, amount and due date against lease 1, and Accounting filed the $2,400 rent as request #2. But a rent notice is a straight line, and it still took two runs and 12 calls. Then the closing run crashed (<code>ModelAPIError</code>, seq 598) <i>after</i> the Boss had written <code>resolved</code> (seq 594), so there is no final decision summary for that run. The resolution is backed by the database (payment #2 posted, request #2 <code>paid</code>, lease moved to 2026-10-02), but a ticket this simple shouldn't need me to explain an exception. It also exposed an earlier logic gap. In Problem 8, a re-run after paying the rent saw <code>next_due</code> jump a month and flagged it as a "discrepancy". We had to add <code>rent_payments_on_file</code> to <code>get_rent_status</code> before the agents understood what a paid rent looks like.</p>
+    <p><b>What all three got right:</b> the <a href="#cash">Cash tab</a> reconciles exactly ($3,400.00 − $840.00 − $2,400.00 = $160.00, difference $0.00). Both payments were approved by me in the dashboard, and the agents never moved a dollar on their own. That is the one score I'd refuse to trade for efficiency.</p>
+
+    <!-- ============================================================ Q2 -->
+    <h3>2. How Actual compared to my Expected plan, ticket by ticket</h3>
+    <p><b>Ticket 101.</b> My plan was right about the shape: <b>Inventory first</b>, then Accounting, then Customer Service, and no Facilities. Two things differed. The Boss sent Inventory and Accounting <i>in the same step</i> (seq 490–491) instead of one after the other. In hindsight that was reasonable, because the linked invoice made the money question independent of the stock answer. And I planned ~7 calls ending at <code>waiting_approval</code>. The first run did end at <code>waiting_approval</code>, but with 13 calls: each specialist re-read the ticket, and Accounting called <code>get_vendor_status</code> and <code>list_payment_requests</code> on top of the <code>get_cash_position</code> + <code>request_payment</code> I expected. My plan also stopped at "waiting on a human". It never said how the ticket gets <i>closed</i>, which took a second run (6 calls) and a rewritten draft #2. I skipped the optional <code>list_inventory</code>, and so did the agents.</p>
+    <p><b>Ticket 102.</b> This was the closest match. I said <b>Facilities first</b> to verify before anyone touches money, and that's exactly what happened. Accounting filed the rent next, sequentially as planned, and neither Inventory nor Customer Service ran. The differences were small. I expected Facilities to call <code>list_payment_requests</code>, but Accounting did it instead. I expected Facilities might hand off to Accounting directly, but the Boss did the relay. I expected ~5 calls and got 9 + 3. My plan's "Paying it would move the lease's next due date to 2026-10-02" turned out to be literally true, and it was also the thing that confused the agents until we gave them <code>last_paid_due_date</code>.</p>
+    <p><b>Ticket 103.</b> The delegation order matched my plan exactly (<b>Inventory → Accounting → Customer Service</b>, no Facilities). The <i>situation</i> didn't. I wrote the plan as if each ticket started from a fresh database, so I expected Bulldog Print Co to still be blocked by invoice 501 and the ticket to end <code>blocked</code>. In the real run, 103 went last: 501 had already been paid for ticket 101 and rent for 102, so the vendor could ship and the only constraint was the $160 in checking. My planned draft offered "8 now, or all 20 at $49.30 once a restock is possible". The actual draft offered only the 8 at list. That's firmer and more honest, because with no revenue in this app a restock never becomes possible. Calls: 17 vs ~7, but in one run.</p>
+    <p><b>The pattern across all three:</b> my plans got <i>who</i> and <i>in what order</i> right every time (first specialist: 3/3; no unneeded agent: 3/3). They were wrong about <i>how much work</i> (2–3× the MCP calls) and about the <i>process around a human approval</i> (101 and 102 each needed a second run to close). I planned tickets in isolation, but they share one checking account, so the order 101 → 102 → 103 changed what 103 could do.</p>
+
+    <!-- ============================================================ Q3 -->
+    <h3>3. What would have been simpler as one agent with tools, and why</h3>
+    <p><b>Ticket 102, the rent notice.</b> It is a straight line with no judgment calls between specialties: read the ticket → read the lease and cash (<code>get_rent_status</code>) → confirm priority (<code>get_cash_position</code>) → <code>request_payment(kind="rent", ref_id=1)</code> → <code>update_ticket</code>. One agent with those five tools could do it in about 5 calls and one model loop. In our run it took three agents, 12 calls and two runs:</p>
+    <ul>
+      <li><b>The Facilities → Accounting hop was a relay, not a collaboration.</b> Facilities' report ("landlord, $2,400 and 2026-09-02 all match") was turned into a task for Accounting, which then <i>re-read</i> the same ticket and called <code>get_rent_status(1)</code> again (seq 575). Every handoff starts a new agent with an empty memory, so facts get fetched twice.</li>
+      <li><b>More model calls means more chances to fail.</b> Both gateway incidents in Problem 9 hit the Boss's turn <i>after</i> <code>update_ticket</code> (the 101 hang after seq 526, the 102 crash after seq 594). A single agent has fewer of those turns.</li>
+      <li><b>The safety argument for separate agents is weak here.</b> The real protection for rent isn't "Facilities can't file payments". It's that <code>approve_and_pay</code> isn't available to <i>any</i> agent and requires my name. One agent with <code>request_payment</code> would have been exactly as safe.</li>
+    </ul>
+    <p>Where the team <i>did</i> earn its cost was <b>ticket 103</b>. Stock (Inventory), pricing and cash priority (Accounting) and customer wording (Customer Service) each needed different rules, and the dedicated prompts held them. Accounting declined the $264 restock, and Customer Service's checklist kept the vendor and the $160 balance out of the club's draft. Ticket 101 sits in between: the invoice-501 insight came from Inventory's prompt telling it to read invoice descriptions, which one agent could also follow.</p>
+
+    <!-- ============================================================ Q4 -->
+    <h3>4. Three new problems this team <u>could</u> solve with the tools we built</h3>
+    <p class="muted">Each assumes the request lands on the board as a ticket. Today that means a row in <code>tickets</code>, since there's no create-ticket route.</p>
+    <ol>
+      <li><b>A customer wants Crest mugs, which are out of stock.</b> Say someone orders 12 × CC-MUG-CREST. Inventory: <code>check_stock("CC-MUG-CREST","OS",12)</code> → 0 on hand, short 12. <code>get_vendor_status()</code> matches "mugs and small goods" to <b>Elm City Gifts</b> (3-day lead, no open invoices, can ship). Accounting: <code>get_cash_position()</code> → $160.00, empty queue, so a restock of 12 × $3.50 = <b>$42.00</b> fits and leaves $118.00. It files <code>request_payment(kind="purchase_order", vendor_id=2, sku="CC-MUG-CREST", size="OS", qty=12)</code>, I approve it, and <code>approve_and_pay</code> returns an expected arrival 3 days out. Customer Service drafts "about 3 days". Unlike ticket 103, this restock is affordable, so the same agents would say yes.</li>
+      <li><b>A fake rent notice.</b> An email from "Elm City Property Mgmt LLC" asks for the shop's $2,400 rent "to our new account". Facilities' prompt already says to compare the requester with <code>leases.landlord</code> (Elm City Properties) and treat a mismatch as possible phishing. <code>get_rent_status(1)</code> also shows <code>rent_payments_on_file</code> (payment #2) and <code>last_paid_due_date</code> 2026-09-02, so September is already paid and the next due date is 2026-10-02. The team would set the ticket to <code>blocked</code> with a fraud flag and file nothing. Ticket notes are treated as data, so "pay today" in the email can't instruct anyone.</li>
+      <li><b>A discount request above our cap, or a bulk order we can fill.</b> Say the Yale AI Club comes back for 30 × CC-HAT-BLUE caps at 25% off. <code>check_stock</code> → 40 on hand, so we can fill it. <code>get_pricing("CC-HAT-BLUE",30,25)</code> → <code>within_policy: false</code> (max 15% for 10+). At 15% it's $18.70/cap, a $12.70 margin on a $6 cost. Accounting recommends 15% and the Boss sets <code>waiting_approval</code> so <i>I</i> decide whether to go beyond policy. No cash moves, the draft quotes $561 for 30 caps at 15% off, and the agents can't grant 25% on their own.</li>
+    </ol>
+
+    <!-- ============================================================ Q5 -->
+    <h3>5. Three new problems this team <u>could not</u> solve, and what we'd need</h3>
+    <ol>
+      <li><b>October rent is coming, and the shop can't pay it.</b> The <a href="#cash">Cash tab</a> ends at <b>$160.00</b>, and <code>leases.next_due</code> is now <b>2026-10-02</b> for <b>$2,400.00</b>: a $2,240 hole. Our system can only spend money. <code>cash_accounts</code> has no inflows, the Yale AI Club's $464 for 8 hoodies has nowhere to be recorded, and nothing looks ahead. Accounting would only notice when the next rent ticket arrives, and then <code>approve_and_pay</code> would refuse for insufficient cash.
+        <br><i>What we'd need:</i> a <code>receivables</code>/<code>sales</code> table and tools <code>record_customer_payment(ticket_id, amount)</code> and <code>record_sale(sku,size,qty,price)</code> that credit checking (human-confirmed, the mirror image of approvals). Also a <code>forecast_cash(days=30)</code> tool that lists every known obligation (rent, open invoices, approved POs) against expected inflows. And a <b>Finance/Treasury agent</b> that runs weekly, not only when a ticket arrives. It would flag the October shortfall now and propose options (collect the club's $464, delay restocks, ask the landlord for terms) for a human to choose.</li>
+      <li><b>Closing the loop on ticket 101: the reprint actually arrives.</b> We paid invoice 501 so Bulldog Print Co would ship the size S tee (5-day lead → about Sept 5), but no tool can record that a shipment arrived. <code>inventory</code> for CC-TEE-WHITE S will stay at 0 forever, Tauhid's tee is never reserved, and if 8 hoodies sell to the club, <code>check_stock</code> will still say 8. Ticket 101 is "resolved" for the office, not for the customer.
+        <br><i>What we'd need:</i> <code>orders</code> / <code>order_lines</code> and <code>purchase_orders</code> tables, plus write tools <code>receive_shipment(po_or_invoice_id, qty)</code>, <code>reserve_stock(ticket_id, sku, size, qty)</code> and <code>fulfill_order(order_id)</code>, all of which update <code>inventory.qty</code> with an audit row. A <b>Fulfillment/Receiving agent</b> would watch expected arrivals (from <code>vendors.lead_days</code>), ask a person to confirm the box arrived, then reserve stock for waiting tickets and reopen them for a "your tee is here" draft.</li>
+      <li><b>Talking to people: sending drafts and reading replies.</b> Drafts #2 and #3 are sitting on the board. Nothing sends them, and nothing would notice if the club replied "yes, we'll take the 8". The same goes for vendors: to know whether Bulldog Print Co could rush 12 more hoodies cheaper, or to confirm the tee's ship date, someone has to email them. Today every ticket must be typed into the database by hand. This is deliberate for the homework (no emails, no Outlook MCP), but a real shop lives in its inbox.
+        <br><i>What we'd need:</i> an inbox/outbox integration (e.g. the Outlook MCP) behind two new tools: <code>send_draft(draft_id, approved_by)</code>, human-approved exactly like payments, and <code>ingest_message(...)</code>. An <b>Intake agent</b> would turn incoming emails into tickets, link replies to the existing ticket (draft #3 → the club's answer → reopen 103) and treat message text as data, never as instructions. A <b>Vendor Relations agent</b> would ask suppliers for quotes and ship dates, but could never promise payment.</li>
+    </ol>
+  </div>
+  <script>
+    // Links like <a href="#101"> switch tabs on this page.
+    window.addEventListener('hashchange', () => {
+      const t = document.getElementById('tab-' + location.hash.slice(1));
+      if (t) t.click();
+    });
+  </script>
 </section>
 </main>
 

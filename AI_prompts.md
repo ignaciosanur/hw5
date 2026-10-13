@@ -1356,3 +1356,31 @@ What was lacking after the first prompt: nothing on the code side. This confirme
 - **Approvals are clicked by the human, not Claude.** The user approved both payments (#1 $840, #2 $2,400) in the dashboard, and Claude only verified the result in SQLite.
 - **Ticket 103 policy fix before the reset.** The shop has no revenue, so a cash shortfall is a final answer, not a reason to mark a ticket `blocked`. The Boss prompt was updated so the Boss makes the call with what the shop can do (offer the 8 hoodies on hand) and resolves.
 - **Two runtime fixes found during the run:** a 90-second model timeout (the first 101 run hung ~13 minutes on one gateway call), and a dashboard correction so a run that errors *after* the Boss resolved the ticket isn't shown as "not resolved".
+
+## Problem 10: Reflection
+
+### Initial prompt
+
+> Problem 10: Reflection
+>
+> Open output/desk_tickets.html and fill the rlefction tab. I'll answer in my oown voice, being detailed and thorough:
+>
+> * How would I evaluate the performance of the agents on each ticket, and why?
+> * For each ticket, how did Actual compare to the Expeced plan I wrote earlier?
+> * What woudl have been simpler as one agent with tools --and why?
+> * describe three new problems Campus Customs might face that this agent team could solve with the tools you built
+> * Descirbe three new problems Campus Customs might face that this agent team could not solve with the tools we built, and explain the tools and agents we would need to solve them
+>
+> Every answer should be tied to this app and the three tickets we ran-- use the ticket tabs and Cash tab on the same page as my evidence. Generic AI essays without Campus Customs details will score low
+
+### What we worked out before building
+
+- **Authorship:** the reflection is drafted in first person by the vibe coder from my choices and the evidence on the page, marked as a draft that I revise in my own words before submitting.
+- **My judgments that drive it:** ticket 103 performed best and 102 weakest; 102 (rent) is the ticket that would have been simpler as one agent with tools; the vibe coder proposes the new "can / can't solve" problems, each tied to specific existing tools or to named missing tables, tools and agents.
+- Every claim cites the ticket tabs, the Cash tab, or audit-trail seq numbers from the Problem 9 run.
+
+### Follow-up prompt
+
+> yay it works now. I'm aligned with the feedback and judgments we wrote together. Ready for the next step? Make all edits finals
+
+What was lacking after the first prompt: the reflection was still marked as a draft pending my review; I reviewed it, agreed with the evaluations and judgments, and asked for it to be finalized.

@@ -86,3 +86,4 @@ output/                    harness.md, mcp_smoke.json, audit_trail.json
 | 7 Backend routes | `backend/main.py`, `backend/db.py`, `backend/models.py` (API types), `tests/test_api.py` |
 | 8 Dashboard | `frontend/`, `output/design.md`, small API additions in `backend/main.py` / `backend/db.py` |
 | 9 Resolve the tickets | `output/desk_tickets.html` (Actual + Cash), `output/resolved_tickets.json`, `output/resolved_board.html` (+ `output/screenshots/`), `output/audit_trail.json`, `output/harness.md` (final A–H docs) |
+| 10 Reflection | `output/desk_tickets.html` (Reflection tab) |
