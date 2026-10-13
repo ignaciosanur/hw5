@@ -6,7 +6,7 @@ An agent team that works the Campus Customs ticket board: an **MCP server** over
 
 ## Quick start for graders
 
-Built and tested with Python 3.14 and Node 24. You need a Portkey key for agent runs; the board, cash and approvals work without one.
+Built and tested with Python 3.14 and Node 24. You need a Portkey key only for agent runs. Without one, the backend and board still start and show tickets, cash and approvals, and a run fails with a clear "PORTKEY_API_KEY … must be set" message (the ticket stays open).
 
 ```bash
 git clone https://github.com/ignaciosanur/hw5.git && cd hw5

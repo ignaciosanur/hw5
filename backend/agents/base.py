@@ -73,7 +73,7 @@ async def delegate(ctx: RunContext[TeamDeps], to_agent: AgentName, task: str, re
 
 def make_agent(role: AgentName, output_type: type) -> Agent:
     agent = Agent(
-        build_model(),
+        None,  # the model is supplied at run time, so the API can start without a Portkey key
         name=role,
         deps_type=TeamDeps,
         output_type=output_type,
@@ -89,7 +89,8 @@ def make_agent(role: AgentName, output_type: type) -> Agent:
 async def run_agent(role: str, prompt: str, deps: TeamDeps, usage=None) -> Any:
     """Drive one agent's loop node by node, writing every node to the audit trail."""
     agent = TEAM[role]
-    async with agent.iter(prompt, deps=deps, usage=usage or deps.run.usage, usage_limits=TEAM_LIMITS) as run:
+    async with agent.iter(prompt, deps=deps, usage=usage or deps.run.usage, usage_limits=TEAM_LIMITS,
+                          model=build_model()) as run:
         step = 0
         async for node in run:
             step += 1
