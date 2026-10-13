@@ -35,7 +35,10 @@ export function TicketQueue({ tickets, selectedId, onSelect }: Props) {
           [0, 1, 2].map((i) => <div key={i} className="ticket ticket--skeleton" aria-hidden="true" />)}
         {tickets?.map((t, i) => {
           const state = deskState(t);
-          const outcome = t.last_run?.decision?.decision ?? (t.last_run?.status === "failed" ? t.last_run.error : null);
+          // Prefer the Boss's decision; if the run errored after recording it, use the Boss's note from the DB.
+          const lastNote = t.decision_notes.at(-1)?.replace(/^\[[^\]]*\]\s*/, "");
+          const outcome = t.last_run?.decision?.decision
+            ?? (t.status === "resolved" ? lastNote : t.last_run?.status === "failed" ? t.last_run.error : null);
           return (
             <button
               key={t.id}

@@ -774,3 +774,585 @@ What was lacking after the first prompt: the backend only started from the proje
 - The dashboard shows the real DB status plus derived states (**Running**, **Failed**, and **Approved · re-run to close**) instead of collapsing everything to open/resolved. A ticket only turns green when the Boss resolves it.
 - Live testing exposed a gap: after rent was paid, a re-run flagged the lease's moved-forward due date as a "discrepancy" and blocked the ticket. `get_rent_status` now reports rent payments on file, and the Boss/Facilities prompts say when a paid rent notice is resolved.
 - Small backend additions for the UI: `last_run` on tickets (rebuilt from the audit trail), payee/description on approvals, `reset_enabled` and `last_reset_seq` on health, and whole (unclipped) agent reports in the audit trail.
+
+## Problem 9: Resolve the Tickets
+
+### Initial prompt
+
+> # Problem 9: Resolve the tickets
+>
+> ## Objective
+>
+> Perform a complete end-to-end test of the Campus Customs multi-agent system by resetting the working database, executing tickets **101, 102, and 103** through the React dashboard, and verifying that all three reach a valid resolved state.
+>
+> Document the actual agent behavior, reconcile every financial transaction against the database, preserve the execution audit trail, and produce the required final deliverables.
+>
+> This problem is an **execution and verification exercise**, not a simulation. Use the real agents, MCP tools, backend API, React dashboard, and working database developed in previous problems.
+>
+> **Critical success criteria:**
+> - All three tickets are genuinely resolved.
+> - Every financial transaction is explicitly approved by a human before execution.
+> - The final checking balance reconciles exactly with `cash_accounts`.
+> - All reported agent actions and tool calls are supported by actual execution records.
+> - All required output files are created and validated.
+>
+> ---
+>
+> ## 1. Inspect the Existing System
+>
+> Before executing anything, review the relevant project files and confirm how the components interact.
+>
+> Inspect:
+>
+> - `data/campus_customs_new.db`
+> - `backend/main.py`
+> - The React dashboard in `frontend/`
+> - The existing agent orchestration and MCP integrations
+> - `output/desk_tickets.html` from Problem 6
+> - `output/audit_trail.json`, if it already exists
+> - The database reset and seeding mechanism
+>
+> Identify:
+>
+> 1. The requirements and resolution criteria for tickets 101, 102, and 103.
+> 2. The five agents, their responsibilities, and their available MCP tools.
+> 3. The mechanism used to execute and monitor ticket workflows.
+> 4. How financial approvals are proposed, recorded, and executed.
+> 5. How ticket statuses, cash balances, and agent events are persisted.
+>
+> Reuse existing implementations. Do not replace working components with mock data or fabricated results.
+>
+> ## 2. Reset and Verify the Working Database
+>
+> Before running any ticket, reset the working database:
+>
+> `data/campus_customs_new.db`
+>
+> Use the project's established reset mechanism to restore the original seeded state.
+>
+> After resetting:
+>
+> 1. Confirm tickets 101, 102, and 103 are open.
+> 2. Confirm prior test executions and pending approvals have been reset as intended.
+> 3. Query `cash_accounts` directly to retrieve the starting checking balance.
+> 4. Record the starting balance with exact monetary precision.
+> 5. Confirm the backend and MCP tools are connected to the same working database.
+>
+> **Do not assume the starting balance. It must be read from the database after the reset.**
+>
+> Preserve historical audit records that are intended to be append-only, while ensuring the new run can be uniquely identified and distinguished from previous tests.
+>
+> If the reset fails or the database is inconsistent, correct the issue before proceeding.
+>
+> ## 3. Execute All Three Tickets
+>
+> Run tickets **101, 102, and 103** through the real agent workflow exposed by the React dashboard.
+>
+> Execute them sequentially, in numerical order, unless the existing system requires a different dependency order.
+>
+> For each ticket:
+>
+> 1. Select the ticket in the dashboard.
+> 2. Start the agent workflow using the existing execution controls.
+> 3. Allow the Boss agent to coordinate the necessary specialist agents.
+> 4. Observe agent delegations, MCP tool calls, results, and errors.
+> 5. Respond to any required human approval requests through the established approval mechanism.
+> 6. Wait for the backend to confirm the ticket's actual final status.
+> 7. Verify the ticket's resolution criteria using authoritative database records.
+> 8. Record the resulting financial changes, if any.
+> 9. Capture the dashboard's final resolved state.
+>
+> Do not launch duplicate workflows or reset the database between tickets.
+>
+> ### Agent Execution Requirements
+>
+> For every ticket, capture:
+>
+> - The first specialist contacted by the Boss
+> - Every participating agent
+> - The sequence of delegations
+> - What each agent was asked to accomplish
+> - MCP tools invoked by each agent
+> - Relevant tool results
+> - Final agent contributions
+> - Any errors, retries, or unresolved dependencies
+> - Human approvals requested and completed
+> - The final ticket outcome
+>
+> Use actual execution events and MCP logs as the source of truth.
+>
+> Do not assume an agent participated simply because it was included in the original plan.
+>
+> ### Human Approval Requirements
+>
+> Agents may identify, prepare, or propose financial transactions, but they must not independently authorize or execute payments.
+>
+> When a payment or purchase requires approval:
+>
+> 1. Retrieve the pending approval and its transaction details.
+> 2. Verify the amount, purpose, payee, and available checking balance.
+> 3. Present the approval through the existing dashboard workflow.
+> 4. Require explicit human authorization before executing the transaction.
+> 5. Apply the payment only through the approved backend route.
+> 6. Verify the resulting database transaction and checking balance.
+>
+> **Do not automatically approve transactions, simulate a human approval, or bypass the authorization mechanism.**
+>
+> If a required approval has not been granted, leave the transaction pending and report the ticket as blocked or awaiting approval rather than falsely marking it resolved.
+>
+> ## 4. Complete the Actual Sections in `output/desk_tickets.html`
+>
+> Open and update the existing HTML file from Problem 6:
+>
+> `output/desk_tickets.html`
+>
+> Preserve the original **Expected** sections for tickets 101, 102, and 103.
+>
+> Populate each ticket's **Actual** section using the results of the real execution.
+>
+> For every ticket, document:
+>
+> **A. Actual Delegation Sequence**
+> - Which agent the Boss contacted first
+> - Why that agent was selected, based on the recorded workflow
+> - Which additional specialists participated
+> - The order and purpose of their delegations
+>
+> **B. Actual MCP Tool Usage**
+> - MCP tool names
+> - The agent responsible for each invocation
+> - What each tool retrieved, verified, or changed
+> - Whether the tool call succeeded or failed
+>
+> **C. Actual Outcome**
+> - Final ticket status
+> - Summary of actions completed
+> - Financial transactions or approvals, if applicable
+> - Outstanding issues or exceptions
+>
+> **D. Expected vs. Actual Comparison**
+> - Which delegations matched the original plan
+> - Which expected agents or tool calls were unnecessary
+> - Which additional actions were required
+> - Whether the actual execution was more or less efficient than expected
+>
+> Use concise, readable tables or timelines where helpful.
+>
+> **Do not overwrite, rewrite, or retroactively adjust the original Expected sections.** The objective is to compare the original plan against actual agent behavior.
+>
+> Keep the Cash and Reflection tabs available. Populate the Cash tab as described below. Leave Reflection unchanged unless previously completed or explicitly required elsewhere.
+>
+> ## 5. Reconcile All Cash Movements
+>
+> Populate the **Cash** tab in `output/desk_tickets.html` with a complete, auditable cash reconciliation.
+>
+> Record the starting checking balance immediately after the reset.
+>
+> Then itemize every cash movement associated with tickets 101, 102, and 103.
+>
+> Use a structure similar to:
+>
+> | Item | Transaction | Cash change | Balance after |
+> |---|---|---:|---:|
+> | Starting balance | After database reset | $0.00 | Actual starting balance |
+> | Ticket 101 | Actual payment or purchase | Actual amount | Calculated balance |
+> | Ticket 102 | Actual payment or purchase | Actual amount | Calculated balance |
+> | Ticket 103 | Actual payment or purchase | Actual amount | Calculated balance |
+> | Ending balance | Final database verification | Net change | Actual ending balance |
+>
+> Replace illustrative values with verified database values. Include multiple rows for a ticket if multiple transactions occurred, and explicitly show $0.00 for tickets that produced no cash movement.
+>
+> For every transaction, identify:
+>
+> - Associated ticket ID
+> - Payment or purchase description
+> - Payee or vendor, where available
+> - Approved amount
+> - Approval reference, where available
+> - Actual cash movement
+> - Checking balance after the transaction
+>
+> ### Required Reconciliation
+>
+> Calculate:
+>
+> `Expected Ending Balance = Starting Balance + Total Cash Inflows - Total Cash Outflows`
+>
+> Then query `cash_accounts` directly and verify:
+>
+> `Expected Ending Balance = Actual Database Ending Balance`
+>
+> Use exact decimal arithmetic or integer cents. Do not use imprecise floating-point arithmetic for financial reconciliation.
+>
+> **The reconciliation difference must be exactly $0.00.**
+>
+> Do not infer cash movement from agent messages or approval proposals. Only posted database transactions count.
+>
+> If the balances do not reconcile:
+>
+> 1. Inspect the transaction records and approval history.
+> 2. Check for duplicate payments, missing entries, or incorrect signs.
+> 3. Identify the discrepancy.
+> 4. Correct reporting or implementation errors where appropriate, without fabricating financial records.
+> 5. Recalculate and verify the balance.
+>
+> Do not silently adjust the reported balance to make the reconciliation pass.
+>
+> Incorrect cash accounting is a critical failure, even if all three tickets appear resolved in the dashboard.
+>
+> ---
+>
+> ## 6. Create `output/resolved_tickets.json`
+>
+> Create a structured JSON file containing the actual execution results for all three tickets.
+>
+> Required output:
+>
+> `output/resolved_tickets.json`
+>
+> Include the following for each ticket:
+>
+> - `id`
+> - `final_status`
+> - `short_outcome`
+> - `agent_contributions`
+> - `human_approvals`
+>
+> Use a consistent structure similar to:
+>
+> ```json
+> {
+>   "tickets": [
+>     {
+>       "id": 101,
+>       "final_status": "resolved",
+>       "short_outcome": "Verified outcome from the actual run",
+>       "agent_contributions": [
+>         {
+>           "agent": "Actual agent name",
+>           "role": "Contribution during execution",
+>           "delegations": [],
+>           "mcp_tools_used": []
+>         }
+>       ],
+>       "human_approvals": [
+>         {
+>           "approval_id": "Actual approval reference",
+>           "description": "Approved transaction",
+>           "amount": "0.00",
+>           "status": "approved"
+>         }
+>       ]
+>     }
+>   ]
+> }
+> ```
+>
+> Include all three tickets using actual execution data.
+>
+> Use empty arrays when no approvals or delegations occurred.
+>
+> Do not fabricate agent names, tool calls, approval references, or outcomes.
+>
+> Validate that the file is well-formed JSON and that its final statuses match the database.
+>
+> ## 7. Create `output/resolved_board.html`
+>
+> Create a standalone HTML page at:
+>
+> `output/resolved_board.html`
+>
+> This page must be directly openable in a browser without requiring the React development server.
+>
+> Include a screenshot of the actual React dashboard for each resolved ticket:
+>
+> - Ticket 101
+> - Ticket 102
+> - Ticket 103
+>
+> Each screenshot should show the relevant ticket selected and its final resolved state.
+>
+> Capture screenshots from the running React application after the backend confirms resolution. Do not recreate screenshots using fabricated HTML or mock ticket data.
+>
+> The HTML page should:
+>
+> - Present the three screenshots in clearly labeled sections or tabs.
+> - Embed or reliably reference the screenshot files.
+> - Display the corresponding ticket IDs and verified final statuses.
+> - Use a clean, readable layout consistent with the Campus Customs dashboard.
+> - Preserve sufficient screenshot resolution for the ticket state and agent activity to be readable.
+>
+> Prefer embedding screenshots directly into the HTML or using stable relative paths so the artifact works when opened locally.
+>
+> If the dashboard cannot be rendered or screenshots cannot be captured, document the limitation explicitly rather than generating fake evidence.
+>
+> ## 8. Append to `output/audit_trail.json`
+>
+> Append the actual execution records to:
+>
+> `output/audit_trail.json`
+>
+> Preserve existing historical entries rather than replacing them.
+>
+> If the file does not exist, create it using a consistent JSON structure.
+>
+> Each new audit record should include, where available:
+>
+> - Unique run identifier
+> - Ticket ID
+> - Timestamp
+> - Agent name
+> - Event type
+> - Delegation details
+> - MCP tool name
+> - Tool input and relevant result
+> - Approval requests and decisions
+> - Payment execution outcomes
+> - Errors or exceptions
+> - Final ticket status
+>
+> Maintain chronological ordering and sufficient detail to reconstruct what occurred.
+>
+> Avoid duplicating events if they are retrieved multiple times during polling.
+>
+> Do not log credentials, authentication tokens, or other secrets.
+>
+> The audit trail must contain **real execution events**, not expected plans, synthesized activity, or simulated interactions.
+>
+> ## 9. Complete `output/harness.md`
+>
+> Finalize the technical documentation at:
+>
+> `output/harness.md`
+>
+> Explain how the Campus Customs multi-agent system works, including the following sections.
+>
+> ### A. System Architecture
+>
+> Describe how the React dashboard, FastAPI backend, Boss agent, specialist agents, MCP servers, and SQLite database interact.
+>
+> Include the main execution and data flows.
+>
+> ### B. Database Tables
+>
+> Document the relevant database tables, including:
+>
+> - Table names
+> - Purpose
+> - Important columns
+> - Relationships
+> - How ticket statuses, approvals, transactions, and cash balances are stored
+>
+> Derive this information from the actual database schema.
+>
+> ### C. MCP Tools
+>
+> List the implemented MCP tools.
+>
+> For each tool, document:
+>
+> - Exact tool name
+> - Purpose
+> - Inputs
+> - Outputs
+> - Whether it is read-only or modifies state
+> - Which agents can use it
+>
+> Do not invent tools that are not implemented.
+>
+> ### D. Five-Agent Architecture
+>
+> Document all five agents and their responsibilities.
+>
+> Explain:
+>
+> - The Boss agent's coordination role
+> - Each specialist's operational responsibilities
+> - How delegation works
+> - How agents exchange information
+> - How unnecessary delegations are avoided
+>
+> Use the actual agent configuration and implementation.
+>
+> ### E. Backend API
+>
+> Document the implemented FastAPI routes, including:
+>
+> - HTTP method
+> - Endpoint
+> - Purpose
+> - Main request parameters
+> - Response structure
+> - Error behavior
+> - Relevant security or approval requirements
+>
+> Include the routes required for the React dashboard and any supporting endpoints added during implementation.
+>
+> ### F. React Dashboard
+>
+> Describe the frontend structure and its major capabilities:
+>
+> - Ticket selection and execution
+> - Agent activity monitoring
+> - Ticket status updates
+> - Agent contribution summaries
+> - Human approvals
+> - Checking balance display
+> - Database reset controls
+>
+> Explain how the frontend communicates with FastAPI.
+>
+> ### G. Safety Rules
+>
+> Document the system's operating safeguards, including:
+>
+> - Agents cannot independently authorize payments.
+> - Financial transactions require explicit human approval.
+> - Duplicate approvals and payments must be prevented.
+> - Database state is the source of truth.
+> - Ticket resolution requires verified completion criteria.
+> - MCP activity is auditable.
+> - Reset operations are restricted to deliberate development/testing actions.
+> - Sensitive credentials and secrets must not appear in logs.
+> - Errors must be reported rather than concealed.
+>
+> ### H. Execution and Verification
+>
+> Explain how to:
+>
+> 1. Start the backend.
+> 2. Start the React frontend.
+> 3. Reset the development database.
+> 4. Execute the three tickets.
+> 5. Monitor agent events.
+> 6. Complete human approvals.
+> 7. Verify ticket resolution.
+> 8. Reconcile the checking balance.
+> 9. Review the generated audit artifacts.
+>
+> Document any known limitations or incomplete functionality.
+>
+> ---
+>
+> ## 10. Final Validation
+>
+> Before completing Problem 9, perform a final consistency check across all artifacts.
+>
+> ### Ticket Resolution
+>
+> - Tickets 101, 102, and 103 have been executed using real agent workflows.
+> - Each ticket's final status is verified against the database.
+> - Each ticket's resolution criteria have been satisfied.
+> - No ticket is incorrectly marked resolved while awaiting approval.
+>
+> ### Financial Reconciliation
+>
+> - Starting checking balance was captured immediately after reset.
+> - Every approved, posted cash transaction is itemized.
+> - Every ticket's net cash impact is explained.
+> - The ending calculated balance matches `cash_accounts` exactly.
+> - Reconciliation difference equals $0.00.
+> - No unapproved transaction changed the checking balance.
+>
+> ### Documentation and Artifacts
+>
+> - `output/desk_tickets.html` preserves all original Expected sections.
+> - Each ticket's Actual section is populated from real execution data.
+> - The Cash tab contains a complete reconciliation.
+> - `output/resolved_tickets.json` is valid and covers all three tickets.
+> - `output/resolved_board.html` opens locally and contains authentic screenshots for all three tickets.
+> - `output/audit_trail.json` contains appended, deduplicated execution events.
+> - `output/harness.md` accurately describes the implemented system.
+>
+> ### Cross-Artifact Consistency
+>
+> Confirm that the same ticket statuses, agent actions, approvals, transaction amounts, and financial results are represented consistently across:
+>
+> - The working SQLite database
+> - The backend API
+> - The React dashboard
+> - The ticket planning and actuals page
+> - The resolved tickets JSON
+> - The execution audit trail
+>
+> Where inconsistencies exist, investigate and resolve them using authoritative execution and database evidence.
+>
+> ---
+>
+> ## 11. Required Deliverables
+>
+> Produce or update the following files:
+>
+> | File | Purpose |
+> |---|---|
+> | `output/desk_tickets.html` | Expected vs. Actual agent plans and detailed cash reconciliation |
+> | `output/resolved_tickets.json` | Structured execution outcomes for tickets 101, 102, and 103 |
+> | `output/resolved_board.html` | Standalone visual evidence with screenshots of each resolved ticket |
+> | `output/audit_trail.json` | Append-only record of actual agent and MCP activity |
+> | `output/harness.md` | Complete technical documentation of the system |
+>
+> Preserve the existing implementation unless a necessary bug fix is required to complete or verify the workflows.
+>
+> ## 12. Final Execution Report
+>
+> After completing the work, provide a concise report containing:
+>
+> **Ticket outcomes**
+> - Final status of ticket 101
+> - Final status of ticket 102
+> - Final status of ticket 103
+> - Brief explanation of each result
+>
+> **Financial reconciliation**
+> - Starting checking balance
+> - Net cash impact of each ticket
+> - Total cash outflows and inflows
+> - Ending calculated balance
+> - Ending database balance
+> - Reconciliation difference
+>
+> **Agent execution**
+> - Which agents participated in each ticket
+> - Important differences between Expected and Actual delegations
+> - Any failures, retries, or unexpected behavior
+>
+> **Deliverables**
+> - Files created or updated
+> - Verification results
+> - Any unresolved issues or limitations
+>
+> Do not report a successful test unless the corresponding execution and verification steps actually succeeded.
+>
+> ---
+>
+> ## Final Success Criterion
+>
+> Problem 9 is complete only when **all three tickets have been genuinely resolved, all required human approvals have been obtained, all actual agent behavior has been documented, all deliverables have been generated, and the final checking balance matches the working database exactly**.
+>
+> Prioritize verifiable execution, financial accuracy, and auditability over simply displaying three green "Resolved" indicators.
+>
+> If a required action is blocked, including by missing human authorization, report the blocker transparently instead of fabricating completion.
+
+### Follow-up prompt
+
+> approved request #1, go ahead
+
+What was lacking after the first prompt: the approval hadn't actually reached the backend (only the first of the two approve clicks was done), so the database still showed request #1 pending and nothing was paid.
+
+### Follow-up prompt
+
+> That's so cool! Ok check now
+
+What was lacking after the first prompt: nothing on the code side. This confirmed the human approval of request #1 ($840, invoice 501) had now been completed in the dashboard.
+
+### Follow-up prompt
+
+> Done
+
+What was lacking after the first prompt: nothing on the code side. This confirmed the human approval of request #2 ($2,400 rent).
+
+### What we worked out before building
+
+- **Approvals are clicked by the human, not Claude.** The user approved both payments (#1 $840, #2 $2,400) in the dashboard, and Claude only verified the result in SQLite.
+- **Ticket 103 policy fix before the reset.** The shop has no revenue, so a cash shortfall is a final answer, not a reason to mark a ticket `blocked`. The Boss prompt was updated so the Boss makes the call with what the shop can do (offer the 8 hoodies on hand) and resolves.
+- **Two runtime fixes found during the run:** a 90-second model timeout (the first 101 run hung ~13 minutes on one gateway call), and a dashboard correction so a run that errors *after* the Boss resolved the ticket isn't shown as "not resolved".

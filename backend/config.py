@@ -33,6 +33,7 @@ TEAM_LIMITS = UsageLimits(
 MAX_DELEGATION_DEPTH = 3       # boss -> A -> B -> C, no deeper
 MAX_DELEGATIONS_PER_TICKET = 8
 AUDIT_CLIP_CHARS = 1500        # long tool outputs are clipped in the audit trail
+MODEL_TIMEOUT_S = 90           # per model request; retried up to 2 times
 
 
 @lru_cache(maxsize=1)
@@ -40,5 +41,8 @@ def build_model() -> OpenAIResponsesModel:
     key = os.getenv("PORTKEY_API_KEY", "").strip()
     if not key or not MODEL_NAME:
         raise RuntimeError("PORTKEY_API_KEY and OPENAI_MODEL must be set in .env")
-    client = AsyncOpenAI(api_key=key, base_url=PORTKEY_BASE_URL, default_headers={"x-portkey-api-key": key})
+    # A hung gateway call must fail fast and retry, not block a ticket for 10+ minutes
+    # (the OpenAI client default is 600s per attempt). Problem 9 hit exactly that.
+    client = AsyncOpenAI(api_key=key, base_url=PORTKEY_BASE_URL, default_headers={"x-portkey-api-key": key},
+                         timeout=MODEL_TIMEOUT_S, max_retries=2)
     return OpenAIResponsesModel(MODEL_NAME, provider=OpenAIProvider(openai_client=client))

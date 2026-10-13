@@ -159,3 +159,149 @@ Start from the `backend/` folder (venv active): `uvicorn main:app --reload --por
 - `POST /api/reset`: development only. Restores the seeded DB via `reset_db.py` and appends a `reset` marker to the audit trail (events are never deleted).
 - `GET /api/health`: liveness check, active runs and the allowed CORS origins.
 - `GET /`: index listing the routes and the docs link.
+
+---
+
+# Final system documentation (Problem 9)
+
+This section describes the system as built and verified in the Problem 9 end-to-end run. Where it differs from the per-problem notes above, this section wins.
+
+## A. System architecture
+
+```
+ React dashboard (frontend/, :5173)
+   │  fetch, JSON · polls 1.5s while running / 8s idle
+   ▼
+ FastAPI backend (backend/main.py, :8000)
+   ├─ read-only SQLite queries (backend/db.py) ──────────────────────┐
+   ├─ POST /run → background task → Boss agent (PydanticAI)          │
+   │                 └─ delegate() ↔ Inventory · Accounting ·        │
+   │                    Facilities · Customer Service (any ↔ any)    │
+   │                 every agent: filtered MCP toolset (stdio)       │
+   │                 every loop node → output/audit_trail.json        │
+   └─ POST /approve → MCP approve_and_pay (human-only tool) ─┐      │
+                                                              ▼      ▼
+                    MCP server campus-customs-ops (mcp_server/mcp_server.py)
+                                                              │
+                                                              ▼
+                                      SQLite data/campus_customs_new.db
+```
+
+- **Run flow:** the dashboard calls `POST /api/tickets/{id}/run`, which returns 202 with a `run_id`. The backend runs the Boss in an asyncio task. The Boss reads the ticket through MCP and delegates with `delegate(to_agent, task, reason)`. Each specialist runs its own PydanticAI loop with its own MCP tool slice. Reports flow back up the chain. The Boss records its call with `update_ticket`, which an output validator enforces, and returns a `TicketDecision`. The dashboard polls `/api/events?after_seq=` and `/api/tickets`.
+- **Money flow:** an agent can only call `request_payment`, which writes a `payment_requests` row (pending). A person approves in the dashboard → `POST /api/approvals/{id}/approve` → the MCP tool `approve_and_pay`. That runs one SQLite transaction (`BEGIN IMMEDIATE`): insert into `payments`, mark the invoice paid or advance the lease's `next_due`, debit `cash_accounts`, and mark the request paid.
+- **Model:** every agent uses the single model named in `.env` (`OPENAI_MODEL`) through Portkey, via `OpenAIResponsesModel`. Requests time out after 90s and are retried up to 2 times.
+
+## B. Database tables (`data/campus_customs_new.db`)
+
+| Table | Purpose | Key columns | Relationships |
+|---|---|---|---|
+| `desk` | The shop's "today" | `date_today` (2026-08-31), `notes` | — |
+| `tickets` | The board | `id`, `type`, `requester`, `subject`, `sku`, `size`, `qty`, `lease_id`, `invoice_id`, **`status`** (`open / in_progress / waiting_approval / blocked / resolved`), `notes` (original request plus dated Boss notes), `created_at` | → `leases.id`, → `invoices.id` |
+| `inventory` | Stock by SKU + size | PK (`sku`, `size`), `qty`, `location` | `sku` ↔ `pricing.sku` |
+| `pricing` | Cost and list price | `sku` PK, `unit_cost`, `list_price` | — |
+| `vendors` | Suppliers | `id`, `name`, `specialty`, `lead_days` | ← `invoices.vendor_id` |
+| `invoices` | Vendor bills | `id`, `vendor_id`, `amount`, `due_date`, **`status`** (`open`/`paid`), `description` | → `vendors.id` |
+| `leases` | The shop's space | `id`, `landlord`, `monthly_rent`, **`next_due`** (advances a month when rent is paid) | ← `tickets.lease_id` |
+| `cash_accounts` | **Source of truth for cash** | `name` (`checking`), **`balance`**, `date` | — |
+| `payments` | **Posted transactions only** | `id`, `kind` (`invoice`/`rent`/`purchase_order`), `ref_id`, `amount`, `account`, `paid_at`, **`approved_by`** | ← `payment_requests.payment_id` |
+| `payment_requests`* | Agent proposals awaiting a human | `id`, `kind`, `ref_id`, `vendor_id`, `sku`/`size`/`qty` (POs), `amount` (always from the DB), `reason`, `ticket_id`, `requested_by`, **`status`** (`pending`/`paid`/`rejected`), `decided_by`, `decided_at`, `payment_id` | → `tickets`, → `payments` |
+| `drafts`* | Customer/landlord messages, never sent | `id`, `ticket_id`, `recipient` (always the ticket's requester), `subject`, `body`, `created_by`, `status` | → `tickets` |
+
+\* Created only in the working copy by `reset_db.py`. The original `data/campus_customs.db` is read-only and never opened.
+
+## C. MCP tools (15, server `campus-customs-ops`)
+
+| Tool | Purpose | Inputs | Output (main fields) | State | Agents |
+|---|---|---|---|---|---|
+| `list_open_tickets` | The board | — | `shop_date`, `tickets[]` | read | Boss |
+| `get_ticket` | One ticket + links | `ticket_id` | ticket, `linked_invoice`, `linked_lease`, `payment_requests[]`, `drafts[]` | read | all five |
+| `update_ticket` | Record the decision | `ticket_id`, `status`, `note`, `updated_by` | `ok`, `status`, `notes` | **writes** `tickets` | Boss |
+| `check_stock` | Stock + shortfall | `sku`, `size`, `qty_needed=1` | `qty`, `location`, `shortfall`, `can_fill_from_stock` | read | Inventory |
+| `list_inventory` | All sizes of a SKU | `sku=None` | `items[]`, `total_units` | read | Inventory |
+| `get_vendor_status` | Vendor shipping status | `vendor_id=None` | per vendor `lead_days`, `open_invoices[]` with `days_past_due`, `can_ship` | read | Inventory, Accounting |
+| `get_pricing` | Price, discount policy, margin | `sku`, `qty=1`, `discount_pct=0` | `unit_price`, `unit_margin`, `margin_pct`, `order_total`, `within_policy`, policy (10+ units, max 15%) | read | Accounting, Customer Service |
+| `get_cash_position` | Cash vs. obligations in priority order | — | `total_cash`, `payment_queue[]` (rent ≤7 days → overdue invoices → other invoices → POs) with `fits`/`balance_after` | read | Boss, Accounting, Facilities |
+| `get_rent_status` | Rent facts | `lease_id` | `monthly_rent`, `next_due`, `days_until_due`, `overdue`, `cash_after_rent`, `rent_payments_on_file`, `last_paid_due_date` | read | Accounting, Facilities |
+| `request_payment` | Propose a payment | `kind`, `requested_by`, `reason`, `ref_id`, `ticket_id`, `vendor_id`, `sku`, `size`, `qty` | `request_id`, `amount` (from DB), `cash_after_if_approved`. Refuses duplicates | **writes** `payment_requests` (no money) | Accounting |
+| `list_payment_requests` | What's pending | `status='pending'` | `requests[]`, `total_amount` | read | Boss, Accounting, Facilities |
+| `save_customer_draft` | Save a message draft | `ticket_id`, `subject`, `body`, `created_by` | `draft_id`, `recipient` | **writes** `drafts` | Customer Service |
+| `list_drafts` | Saved drafts | `ticket_id=None` | `drafts[]` | read | Boss, Customer Service |
+| `approve_and_pay` | **Pay an approved request** | `request_id`, `approved_by` | `payment_id`, `balance_after`, invoice/lease change. Refuses: not pending, insufficient cash, invoice not open, vendor blocked | **writes** `payments`, `invoices`/`leases`, `cash_accounts`, `payment_requests` | **no agent (human, via API)** |
+| `reject_payment_request` | Reject a request | `request_id`, `rejected_by`, `reason` | `status: rejected` | **writes** `payment_requests` | **no agent (human, via API)** |
+
+## D. Five-agent architecture
+
+| Agent | Responsibility | Output |
+|---|---|---|
+| **Boss** | Reads each ticket, chooses the minimum set of specialists, gives each a specific task with IDs and numbers, checks reports, makes the final call, and is the only one who sets status (`update_ticket`, enforced by an output validator). Resolution rules by ticket type; a cash shortfall is a final answer, not a reason to block. | `TicketDecision` |
+| **Inventory** | Stock by SKU + size, shortfall, other sizes, vendor match by specialty, `can_ship`, lead-time estimates. Spots when an open invoice already covers the product. | `SpecialistReport` |
+| **Accounting** | Cash priority (rent → overdue invoices → other invoices → restock), files payment/PO requests (never pays), discount policy (10+ units, ≤15%), margins. Files nothing that doesn't fit after higher priorities. | `SpecialistReport` |
+| **Facilities** | Verifies rent notices against the lease (landlord, amount, due date, already paid?) and flags mismatches as possible fraud. | `SpecialistReport` |
+| **Customer Service** | Drafts customer/landlord replies only, after a pre-save checklist (no vendor names, invoices, cash, margins or unsupported dates). | `SpecialistReport` |
+
+- **Delegation:** every agent has `delegate(to_agent, task, reason)`, so any agent can reach any other (full connectivity). A specialist's structured report is returned to the caller as the tool result. Every agent in one ticket run shares one `RunUsage`.
+- **Avoiding unnecessary delegation:** prompts route by ticket type and ask for one specific hand-off per specialist. Code-level guards refuse self-delegation, delegation back up the chain, depth > 3, and more than 8 hand-offs per ticket. Team budget per ticket: 40 model requests, 60 tool calls, 250k tokens. In Problem 9 no hand-off was refused or wasted: 101 used 3 specialists, 102 used 2, 103 used 3, and Facilities never ran on a non-rent ticket.
+
+## E. Backend API (`backend/main.py`)
+
+| Method | Endpoint | Purpose | Main params | Response | Errors / safety |
+|---|---|---|---|---|---|
+| GET | `/api/tickets` | Live board | — | `TicketOut[]`: status, `is_resolved`, description, Boss notes, `pending_approval_ids`, `draft_ids`, `running`, `last_run` (rebuilt from the audit trail) | 503 if DB unavailable |
+| POST | `/api/tickets/{ticket_id}/run` | Start the team | path `ticket_id` | **202** `{run_id, status:"running", events_url}` | 404 unknown, 409 running or resolved |
+| GET | `/api/runs/{run_id}` | Run status/result | path | `running/finished/failed`, decision | 404 (in-memory per server session) |
+| GET | `/api/events` | Agent activity | `ticket_id`, `run_id`, `after_seq`, `limit≤1000`, `include_before_reset` | `EventOut[]` (seq, ts, run, ticket, agent, depth, event, summary, detail), oldest first | — |
+| GET | `/api/approvals` | Requests the agents filed | `status`, `ticket_id` | `ApprovalOut[]` incl. `payee`, `description` | 422 bad status |
+| POST | `/api/approvals/{id}/approve` | **Human approval: the only route that moves money** | body `{approved_by}` | `{approval, payment, cash}` | 404 missing, 409 already processed or refused (cash/vendor), 422 no name. Serialized by a lock plus `BEGIN IMMEDIATE` |
+| POST | `/api/approvals/{id}/reject` | Human rejection | body `{rejected_by, reason}` | `ApprovalOut` | 404 / 409 |
+| GET | `/api/cash` | Checking balance from `cash_accounts` | — | `account`, `balance`, `as_of`, `pending_approvals_total`, `balance_if_all_pending_approved`, `currency: null` (not stored) | 503 |
+| POST | `/api/reset` | Restore the seeded DB | — | statuses, cash, counts, `events_marker_seq` | **403 when `APP_ENV=production`**, 409 while a run is active |
+| GET | `/api/health`, `/` | Liveness and index | — | `reset_enabled`, `last_reset_seq`, active runs, CORS origins | — |
+
+CORS allows only `FRONTEND_URL`, `http://localhost:5173` and `http://127.0.0.1:5173`, with methods GET/POST.
+
+## F. React dashboard (`frontend/`)
+
+- **Structure:** `src/lib` holds `api.ts` (typed fetch client, `VITE_API_BASE_URL`), `types.ts` (mirrors `backend/models.py`), `useDesk.ts` (polling, incremental events by `after_seq`, dedupe by `seq`), `feed.ts` (events → timeline + per-agent review) and `status.ts` (desk state). `src/components` holds the queue, workspace, timeline, run review, finance panel, reset dialog and toasts.
+- **Capabilities:**
+  - Select a ticket (URL keeps `#ticket-N`) and press **Run Agent Team**, which has a synchronous double-click guard.
+  - Live timeline with indented delegation lanes and `MCP` call/result rows.
+  - "Who did what" cards per participating agent.
+  - States: Open, Running, Awaiting approval, Approved · re-run to close, Blocked, Failed, Resolved.
+  - Approval vouchers with payee, purpose, requesting agent, and "now → after" projection. Two-step approve with the approver's name, or reject with a reason.
+  - Checking balance straight from the API, plus a ledger of posted payments.
+  - Reset in the "⋯" menu (dev only, confirmation dialog).
+- **Communication:** JSON over `fetch` to FastAPI. Polls every 1.5s while any ticket runs, 8s idle. Never computes balances or statuses itself.
+
+## G. Safety rules
+
+1. **Agents cannot pay.** Their only money tool is `request_payment`. `approve_and_pay` / `reject_payment_request` are filtered out of every agent, and startup asserts this.
+2. **Every transaction needs explicit human approval** with a named approver. In Problem 9 both payments were approved by the user in the dashboard. Claude did not click approve.
+3. **No duplicate payments.** Duplicate pending requests are refused. Approval locks the DB before checking status, so a second approval gets 409. A test fires 5 at once and exactly 1 succeeds.
+4. **The database is the source of truth.** The dashboard shows API values only. Amounts come from DB rows, never from agent text. Reconciliation uses posted `payments` only.
+5. **Resolution requires verified criteria.** Only the Boss sets status, and only after the money it needed is paid (or none was needed) and the customer draft reflects the decision. The dashboard never turns a ticket green because an HTTP call succeeded.
+6. **MCP activity is auditable.** Every loop node, tool call (args + clipped result), hand-off, approval, reset and failure is appended to `output/audit_trail.json` with run id, ticket and seq. The file is never rewritten from scratch.
+7. **Reset is deliberate and dev-only.** A confirm dialog, 403 in production, 409 during runs, and no reset on startup.
+8. **No secrets in logs.** Keys stay in `.env` (git-ignored). The audit trail and repo were scanned for `.env` values: none found.
+9. **Errors are reported, not hidden.** Interrupted and failed runs are recorded (`run_interrupted`, `run_finished ok:false`) and shown as such in the dashboard.
+
+## H. Execution and verification
+
+1. **Backend:** `cd backend && source ../.venv/bin/activate && uvicorn main:app --reload --port 8000`. Restart it after editing `mcp_server/` or `backend/prompts/`.
+2. **Frontend:** `cd frontend && npm install && npm run dev`, then open http://localhost:5173.
+3. **Reset:** dashboard "⋯" → *Reset demo…* → confirm (or `POST /api/reset`, or `.venv/bin/python reset_db.py`). Verify: `sqlite3 data/campus_customs_new.db "select id,status from tickets; select balance from cash_accounts"`.
+4. **Execute:** select 101 → Run Agent Team. Repeat for 102 and 103, in order.
+5. **Monitor:** watch the Activity feed, or `GET /api/events?ticket_id=101`.
+6. **Approve:** in *Needs your decision* → Approve → your name → Confirm payment. Then re-run the ticket so the Boss can close it.
+7. **Verify resolution:** the `tickets.status` column, and payments/requests in SQLite.
+8. **Reconcile:** starting balance − Σ `payments.amount` = `cash_accounts.balance` (see the Cash tab in `desk_tickets.html`).
+9. **Artifacts:** `output/desk_tickets.html`, `output/resolved_tickets.json`, `output/resolved_board.html`, `output/audit_trail.json`.
+
+**Problem 9 result:** all three tickets resolved. Checking went from $3,400.00 to $160.00 (−$840.00 invoice 501, −$2,400.00 rent, $0.00 for 103), with a reconciliation difference of $0.00.
+
+**Known limitations:**
+- Run status in `/api/runs` is in-memory per server session. The durable record is the audit trail.
+- No authentication: `approved_by` is whatever name the dashboard sends.
+- Closing a ticket after approval takes a second run.
+- `currency` is not stored.
+- In Problem 9, two model calls failed at the gateway: one hung until the new timeout fix, and one returned connection errors after the Boss had already recorded its decision. Neither lost data, and both are documented.
+- Agents re-read the ticket in every specialist, so tool-call counts ran 2–3× the plan.

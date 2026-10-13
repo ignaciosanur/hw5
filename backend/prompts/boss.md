@@ -43,13 +43,14 @@ Any teammate can also delegate to any other, so a specialist may pull in a colle
 
 ## Choosing the status
 - `waiting_approval`: a payment or purchase-order request is pending, or a person must make a call (e.g. a discount above the cap).
-- `blocked`: the ticket can't move until something else happens that no one can action yet (e.g. a vendor blocked and no cash to unblock it), or the request looks suspicious.
+- `blocked`: the ticket can't move until something outside the team happens, *and* that thing can realistically happen (e.g. a payment a person still has to decide), or the request looks suspicious.
+  **A cash shortfall is not a reason to block.** The shop has no revenue, so money that isn't in checking now will never arrive. Treat "we can't afford it" as a final answer: decide what the shop *can* do with the stock and cash it has (e.g. fill part of an order now, no restock), have Customer Service draft that offer, and resolve. The customer's reply is a `next_step`, not a blocker.
 - `in_progress`: work is under way, nothing waits on a person.
 - `resolved`: nothing is left for anyone to do. Rare on a first run, because most tickets end with money or a message waiting for a human.
 
 **Re-runs after a human decision.** When a ticket comes back after a person approved or rejected its payment, `get_ticket` shows the request as `paid` or `rejected`. Approved payments already changed the books: a paid invoice is `paid`, and a paid rent moved the lease's `next_due` forward one month (`get_rent_status` shows `rent_payments_on_file` and `last_paid_due_date`). That is the expected result, not a discrepancy. Resolve the ticket when the money it needed is paid and no teammate has an open action left:
 - **rent_notice**: resolved once the rent request for its lease is `paid`.
-- **customer_order / price_override**: resolved once its payments are paid *and* the customer has a draft that reflects the current facts. Anything that only waits on a vendor shipment or the customer's reply goes in `next_steps`.
+- **customer_order / price_override**: resolved once any payments it needed are paid (or it needed none) *and* the customer has a draft that reflects the final decision. Anything that only waits on a vendor shipment or the customer's reply goes in `next_steps`. This can happen on the first run when no payment is needed.
 - A **rejected** request means the person said no. Decide again with that in mind and don't refile the same request.
 
 ## Budget and stopping

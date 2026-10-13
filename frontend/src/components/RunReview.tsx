@@ -63,7 +63,9 @@ function Contribution({ c }: { c: AgentContribution }) {
   );
 }
 
-export function RunReview({ review, approvals }: { review: Review; approvals: ApprovalRequest[] }) {
+export function RunReview({ review, approvals, ticketStatus, bossNote }: {
+  review: Review; approvals: ApprovalRequest[]; ticketStatus: string; bossNote?: string;
+}) {
   const d = review.decision;
   const filed = (d?.payment_request_ids ?? []).map((id) => approvals.find((a) => a.id === id)).filter(Boolean) as ApprovalRequest[];
   return (
@@ -71,7 +73,15 @@ export function RunReview({ review, approvals }: { review: Review; approvals: Ap
       <div className={`verdict${review.failed ? " is-bad" : ""}`}>
         <div className="verdict-label"><ListChecks size={15} aria-hidden="true" /> Outcome of run {review.runId}</div>
         {review.failed ? (
-          <p className="verdict-text">The run failed: {review.failed}. The ticket was not marked resolved.</p>
+          // The DB status is the truth: a run can error *after* the Boss already recorded its call.
+          ticketStatus === "resolved" ? (
+            <>
+              <p className="verdict-text">Resolved by the Boss. The run then ended with an error ({review.failed}) before writing its final summary.</p>
+              {bossNote && <p className="verdict-why">Boss's recorded decision: {bossNote}</p>}
+            </>
+          ) : (
+            <p className="verdict-text">The run failed: {review.failed}. The ticket was not marked resolved.</p>
+          )
         ) : d ? (
           <>
             <p className="verdict-text">{d.decision}</p>

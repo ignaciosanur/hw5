@@ -109,7 +109,10 @@ export function Workspace({ ticket, events, eventsLoaded, approvals, starting, o
         </div>
       )}
 
-      {review?.finished && !running && <RunReview review={review} approvals={approvals} />}
+      {review?.finished && !running && (
+        <RunReview review={review} approvals={approvals} ticketStatus={ticket.status}
+          bossNote={ticket.decision_notes.at(-1)?.replace(/^\[[^\]]*\]\s*/, "")} />
+      )}
 
       <section className="activity" aria-label="Activity feed">
         <h3 className="section-label">

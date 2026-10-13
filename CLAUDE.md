@@ -82,3 +82,8 @@ An agentic team that runs the shop. Open tickets land on a board (customer order
 - Polls the API: 1.5s while a ticket runs, 8s idle; events are incremental via `after_seq`. Clears its event cache when `/api/health.last_reset_seq` changes.
 - The backend's `--reload` only watches `backend/*.py`. **Restart the backend after editing `mcp_server/` or `backend/prompts/*.md`.**
 - Running pytest resets the working DB and appends a `reset` marker to the real audit trail (so the dashboard feed stays consistent).
+
+## Problem 9 end state (2026-10-12/13): do not disturb casually
+- The working DB holds the verified final run: tickets 101–103 `resolved`, payments #1 ($840) and #2 ($2,400) approved by the user, checking $160.00. Run window: audit seq 484–648 (reset marker 483).
+- **Running `pytest` resets the DB** (wiping this end state). Back up `data/campus_customs_new.db` first if tests are needed.
+- Approvals must be clicked by the user, never by Claude.

@@ -47,6 +47,24 @@
   .muted { color: var(--muted); font-size: 13px; }
   .outcome { background: #f7faf8; border: 1px solid #d5eadd; border-radius: 8px; padding: 10px 14px; }
   .placeholder { text-align: center; color: var(--muted); padding: 60px 20px; }
+
+  .actual h3 { margin-top: 16px; }
+  .run-line { font-size: 13px; color: var(--muted); margin: 2px 0 10px; }
+  .run-line code { font-size: 12px; }
+  .tag.ok { background: var(--req-bg); color: var(--req); }
+  .tag.fail { background: #fde8e6; color: #b42318; }
+  .tag.warn { background: var(--opt-bg); color: var(--opt); }
+  .tag.match { background: var(--req-bg); color: var(--req); }
+  .tag.diff { background: #e7eefc; color: #2251b8; }
+  .exception { border-left: 4px solid #b45309; background: #fff7ea; padding: 10px 14px; border-radius: 6px; margin: 10px 0; font-size: 13.5px; }
+  .num { text-align: right; font-family: ui-monospace, Menlo, monospace; white-space: nowrap; }
+  td.num:first-child { color: inherit; }
+  .recon { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
+  .recon div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fafbfc; }
+  .recon b { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+  .recon span { font: 600 18px ui-monospace, Menlo, monospace; }
+  .recon .zero span { color: var(--req); }
+  tr.total td { font-weight: 700; border-top: 2px solid var(--ink); }
 </style>
 </head>
 <body>
@@ -116,6 +134,47 @@
 
   <div class="card actual">
     <span class="section-label">Actual</span>
+    <p class="run-line">Two runs: <code>run-b823e9ef</code> (13 MCP calls; interrupted after its last step, see exception) → human approval of request #1 → <code>run-bd5cda7b</code> (6 MCP calls, finished, resolved). Source: audit trail seq 484–553, 647.</p>
+
+    <h3>A. Actual delegation sequence</h3>
+    <table>
+      <tr><th>#</th><th>From → to</th><th>Asked to</th><th>Result</th></tr>
+      <tr><td>1</td><td>Boss → <b>Inventory</b> (first)</td><td>Report stock for CC-TEE-WHITE S × 1, the shortfall, and whether invoice 501 ("Rush reprint CC-TEE-WHITE S") already covers it.</td><td>0 on hand, short 1. The invoice is the reprint of this exact tee, so paying it is the fix. No second order.</td></tr>
+      <tr><td>2</td><td>Boss → <b>Accounting</b> (same step as #1)</td><td>Review invoice 501 against cash priority and file the right payment request.</td><td>Rent comes first but 501 still fits. Filed <b>request #1</b> for $840.00.</td></tr>
+      <tr><td>3</td><td>Boss → <b>Customer Service</b></td><td>Write a customer-safe reply: out of stock, the tee is already in a reprint, no duplicate order.</td><td>Saved <b>draft #1</b> to Tauhid Zaman (not sent).</td></tr>
+      <tr><td colspan="4" class="muted">Human: Ignacio Sanchez Urdaneta approved request #1 in the dashboard (02:27:53Z) → payment #1.</td></tr>
+      <tr><td>4</td><td>Boss → <b>Customer Service</b> (re-run)</td><td>Update the reply now that invoice 501 is paid (the 5-day lead time starts from payment).</td><td>Saved <b>draft #2</b>. Boss resolved the ticket.</td></tr>
+    </table>
+    <p class="muted">Why Inventory first: the Boss's task asked whether the shelf can fill the order and whether the linked invoice already covers it. The stock answer decides whether any money is needed. Facilities was not involved.</p>
+
+    <h3>B. Actual MCP tool usage</h3>
+    <table>
+      <tr><th>Agent</th><th>Tool call</th><th>What it returned or changed</th><th></th></tr>
+      <tr><td>Boss</td><td><code>get_ticket(101)</code> ×2 runs</td><td>Ticket + linked invoice 501 ($840, open, due 2026-08-28); on re-run, request #1 paid</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Inventory</td><td><code>get_ticket(101)</code></td><td>SKU / size / qty</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Inventory</td><td><code>check_stock("CC-TEE-WHITE","S",1)</code></td><td>qty 0 (Aisle B), shortfall 1</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Inventory</td><td><code>get_vendor_status(1)</code></td><td>Bulldog Print Co: invoice 501 open, 3 days past due, <code>can_ship: false</code>, lead 5 days</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>get_cash_position()</code></td><td>$3,400; queue rent $2,400 → invoice 501 $840 (both fit)</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>get_ticket(101)</code>, <code>get_vendor_status(1)</code>, <code>list_payment_requests("pending")</code></td><td>Same invoice facts; 0 pending requests</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>request_payment(kind="invoice", ref_id=501, ticket_id=101)</code></td><td><b>Wrote</b> request #1, $840.00, pending. No money moved.</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Customer Service</td><td><code>get_ticket</code>, <code>list_drafts(101)</code>, <code>save_customer_draft</code> ×2 runs</td><td><b>Wrote</b> drafts #1 and #2 (not sent)</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Boss</td><td><code>list_drafts(101)</code> (re-run)</td><td>Found draft #1</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Boss</td><td><code>update_ticket(101, …)</code> ×2 runs</td><td><b>Wrote</b> status <code>waiting_approval</code>, then <code>resolved</code></td><td><span class="tag ok">ok</span></td></tr>
+    </table>
+
+    <h3>C. Actual outcome</h3>
+    <p class="outcome"><b>Final status: <code>resolved</code></b> (DB). Invoice 501 is paid (payment #1, <b>$840.00</b> to Bulldog Print Co, approved by Ignacio Sanchez Urdaneta), which releases the reprint already ordered for this tee. No duplicate order was placed. Updated draft #2 tells the customer that the 5-day lead time runs from payment. Outstanding (outside the agents): a person sends draft #2, and the vendor ships.</p>
+    <div class="exception"><b>Exception: interrupted first run.</b> After its last <code>update_ticket</code> (02:13:12Z), the Boss's next model request hung. The client had no timeout (the OpenAI default is 600s per attempt, with retries). I added a 90-second timeout in <code>backend/config.py</code>; the auto-reload restarted the backend and terminated the hung run. All of its work (request #1, draft #1, status) was already recorded. It is logged as <code>run_interrupted</code> (seq 647). Also: in both runs the Boss tried to finish once without <code>update_ticket</code>, and the output validator sent it back (seq 524).</div>
+
+    <h3>D. Expected vs. actual</h3>
+    <table>
+      <tr><th>Plan item</th><th></th><th>What happened</th></tr>
+      <tr><td>Inventory first</td><td><span class="tag match">matched</span></td><td>Inventory was the first delegation.</td></tr>
+      <tr><td>Then Accounting, then Customer Service</td><td><span class="tag diff">differed</span></td><td>The Boss sent Inventory and Accounting in the <i>same</i> step (parallel), because the linked invoice made the money question independent of stock. Customer Service came after.</td></tr>
+      <tr><td>Facilities not needed</td><td><span class="tag match">matched</span></td><td>Not involved.</td></tr>
+      <tr><td>Optional <code>list_inventory</code></td><td><span class="tag match">skipped</span></td><td>Not used. The customer wasn't offered another size.</td></tr>
+      <tr><td>~7 MCP calls, end <code>waiting_approval</code></td><td><span class="tag diff">more</span></td><td>Run 1 used 13 calls and ended at <code>waiting_approval</code> as planned. Every specialist re-read the ticket, and Accounting re-checked vendor and pending requests. Closing needed a second run (6 calls) after approval, which the plan didn't include. Less efficient than planned (19 vs ~7), but no wrong or duplicate actions.</td></tr>
+    </table>
   </div>
 </section>
 
@@ -168,6 +227,42 @@
 
   <div class="card actual">
     <span class="section-label">Actual</span>
+    <p class="run-line">Two runs: <code>run-6bb705ed</code> (9 MCP calls, finished, waiting_approval) → human approval of request #2 → <code>run-75d7e6ae</code> (3 MCP calls; the Boss recorded <code>resolved</code>, then the run failed on a gateway error). Source: audit trail seq 554–598.</p>
+
+    <h3>A. Actual delegation sequence</h3>
+    <table>
+      <tr><th>#</th><th>From → to</th><th>Asked to</th><th>Result</th></tr>
+      <tr><td>1</td><td>Boss → <b>Facilities</b> (first)</td><td>Verify the rent notice against lease 1: landlord, $2,400, due 2026-09-02; flag discrepancies.</td><td>Landlord, amount and due date all match. Due in 2 days; cash covers it.</td></tr>
+      <tr><td>2</td><td>Boss → <b>Accounting</b></td><td>File the verified rent payment request.</td><td>Filed <b>request #2</b> for $2,400.00. Leaves $160 if approved.</td></tr>
+      <tr><td colspan="4" class="muted">Human: Ignacio Sanchez Urdaneta approved request #2 in the dashboard (02:29:46Z) → payment #2; the lease's next due date moved to 2026-10-02.</td></tr>
+      <tr><td>—</td><td>Boss alone (re-run)</td><td>—</td><td>Saw request #2 paid and set the ticket to <b>resolved</b>. No delegation needed.</td></tr>
+    </table>
+    <p class="muted">Why Facilities first: a rent notice is a request for money, so the Boss had it verified against the lease before anyone filed a payment. Inventory and Customer Service were not involved (no product, and the notice needed no reply).</p>
+
+    <h3>B. Actual MCP tool usage</h3>
+    <table>
+      <tr><th>Agent</th><th>Tool call</th><th>What it returned or changed</th><th></th></tr>
+      <tr><td>Boss</td><td><code>get_ticket(102)</code> (×1 run 1, ×2 run 2)</td><td>Requester, lease 1; on re-run, request #2 <code>paid</code></td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Facilities</td><td><code>get_ticket(102)</code></td><td>Notice text, lease id</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Facilities</td><td><code>get_rent_status(1)</code></td><td>Elm City Properties, $2,400, next due 2026-09-02, 2 days, cash $2,560 → $160 after</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>get_cash_position()</code>, <code>get_ticket(102)</code>, <code>list_payment_requests("pending")</code>, <code>get_rent_status(1)</code></td><td>Rent is priority 1 and fits; 0 pending</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>request_payment(kind="rent", ref_id=1, ticket_id=102)</code></td><td><b>Wrote</b> request #2, $2,400.00, pending. No money moved.</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Boss</td><td><code>update_ticket(102, …)</code> ×2 runs</td><td><b>Wrote</b> <code>waiting_approval</code>, then <code>resolved</code></td><td><span class="tag ok">ok</span></td></tr>
+    </table>
+
+    <h3>C. Actual outcome</h3>
+    <p class="outcome"><b>Final status: <code>resolved</code></b> (DB). Rent paid: payment #2, <b>$2,400.00</b> to Elm City Properties, approved by Ignacio Sanchez Urdaneta. The lease's <code>next_due</code> advanced to 2026-10-02. No draft (none needed).</p>
+    <div class="exception"><b>Exception: the re-run ended with an error after the decision.</b> The Boss called <code>update_ticket(102, "resolved")</code> at 02:30:04Z with the note "Rent payment request 2 for $2,400 under lease 1 is marked paid. No further action remains." Its following model calls then hit gateway connection errors, so the run is logged as <code>failed</code> (ModelAPIError, seq 598) without a final summary. The resolution itself is the Boss's own recorded call and is backed by the DB (payment #2 posted, request #2 paid). Resolved tickets are locked, so it was not re-run. The dashboard was fixed to show "Resolved by the Boss; the run then ended with an error" instead of claiming the ticket wasn't resolved.</div>
+
+    <h3>D. Expected vs. actual</h3>
+    <table>
+      <tr><th>Plan item</th><th></th><th>What happened</th></tr>
+      <tr><td>Facilities first</td><td><span class="tag match">matched</span></td><td>Facilities was the first and only verifier.</td></tr>
+      <tr><td>Then Accounting files rent</td><td><span class="tag match">matched</span></td><td>The Boss delegated to Accounting after Facilities reported (sequential, as planned). Facilities didn't hand off directly.</td></tr>
+      <tr><td>Customer Service optional, Inventory not needed</td><td><span class="tag match">matched</span></td><td>Neither was involved.</td></tr>
+      <tr><td>Optional <code>list_payment_requests</code> by Facilities</td><td><span class="tag diff">moved</span></td><td>Accounting checked pending requests instead.</td></tr>
+      <tr><td>~5 MCP calls, end <code>waiting_approval</code></td><td><span class="tag diff">more</span></td><td>Run 1: 9 calls, ended <code>waiting_approval</code> as planned. Accounting re-read the ticket and rent status. Closing took a 3-call re-run. Slightly less efficient (12 vs ~5), with the same decisions.</td></tr>
+    </table>
   </div>
 </section>
 
@@ -224,12 +319,78 @@
 
   <div class="card actual">
     <span class="section-label">Actual</span>
+    <p class="run-line">One run: <code>run-c3e982b0</code> (17 MCP calls, finished, resolved). It ran after 101 and 102, so invoice 501 was already paid and checking held $160.00. Source: audit trail seq 599–646.</p>
+
+    <h3>A. Actual delegation sequence</h3>
+    <table>
+      <tr><th>#</th><th>From → to</th><th>Asked to</th><th>Result</th></tr>
+      <tr><td>1</td><td>Boss → <b>Inventory</b> (first)</td><td>Check 20 × CC-HOOD-NAVY size M. If short: shortfall, other sizes, restock vendor, lead time, any covering invoice.</td><td>8 on hand, short 12. Bulldog Print Co <b>can ship</b> now (501 paid), 5-day lead.</td></tr>
+      <tr><td>2</td><td>Boss → <b>Accounting</b></td><td>Check pricing and policy for the bulk discount, and whether a 12-unit restock is affordable.</td><td>15% on 20 is within policy ($986). The restock costs $264 but only $160 is in checking ($104 short), so <b>no purchase order was filed</b>. 8 units don't qualify for a discount.</td></tr>
+      <tr><td>3</td><td>Boss → <b>Customer Service</b></td><td>Draft a customer-safe offer: the 8 available at list $58 ($464), no discount, not the full 20.</td><td>Saved <b>draft #3</b> to Yale AI Club (not sent).</td></tr>
+    </table>
+    <p class="muted">Why Inventory first: a discount on 20 hoodies only matters if the shop can supply them. Facilities was not involved.</p>
+
+    <h3>B. Actual MCP tool usage</h3>
+    <table>
+      <tr><th>Agent</th><th>Tool call</th><th>What it returned or changed</th><th></th></tr>
+      <tr><td>Boss</td><td><code>get_ticket(103)</code></td><td>SKU, size M, qty 20</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Inventory</td><td><code>get_ticket(103)</code>, <code>check_stock("CC-HOOD-NAVY","M",20)</code></td><td>qty 8 (Aisle A), shortfall 12</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Inventory</td><td><code>list_inventory("CC-HOOD-NAVY")</code></td><td>S 4 · M 8 · L 14 · XL 6</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Inventory</td><td><code>get_vendor_status()</code></td><td>All three vendors can ship (no open invoices)</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>get_cash_position()</code></td><td>$160.00, empty queue</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>get_pricing</code> (20 @ 15%), (8 @ 0%), (12 @ 15%)</td><td>$49.30/unit within policy · 8 units: no discount allowed · 12 units: up to 15%</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Accounting</td><td><code>get_vendor_status()</code>, <code>list_payment_requests()</code>, <code>get_ticket(103)</code></td><td>Vendor clear; 0 requests</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Customer Service</td><td><code>get_ticket</code>, <code>list_drafts(103)</code>, <code>get_pricing</code> (8 @ 0%), <code>save_customer_draft</code></td><td>Confirmed $58 list price. <b>Wrote</b> draft #3 (not sent).</td><td><span class="tag ok">ok</span></td></tr>
+      <tr><td>Boss</td><td><code>update_ticket(103, "resolved")</code></td><td><b>Wrote</b> status <code>resolved</code></td><td><span class="tag ok">ok</span></td></tr>
+    </table>
+
+    <h3>C. Actual outcome</h3>
+    <p class="outcome"><b>Final status: <code>resolved</code></b> (DB). Decision: offer Yale AI Club the 8 size M hoodies on hand at $58 each ($464), with no discount (8 is under the 10-unit bulk minimum). Don't offer the full 20, because the 12-unit restock ($264) exceeds the $160 in checking, and the shop has no revenue. <b>No payment or purchase order; $0.00 cash movement.</b> Outstanding (outside the agents): a person sends draft #3, and the club replies.</p>
+    <div class="exception"><b>Note: prompt change before this run.</b> Before the reset, the Boss prompt was updated (with the user's approval) so that a cash shortfall is a final answer, not a reason to mark a ticket <code>blocked</code>, since the shop has no revenue. Without it the Boss would likely have parked 103 as <code>blocked</code> indefinitely. The Boss also tried to finish once without <code>update_ticket</code>, and the validator sent it back (seq 641).</div>
+
+    <h3>D. Expected vs. actual</h3>
+    <table>
+      <tr><th>Plan item</th><th></th><th>What happened</th></tr>
+      <tr><td>Inventory → Accounting → Customer Service</td><td><span class="tag match">matched</span></td><td>Same three specialists, same order, sequential.</td></tr>
+      <tr><td>Facilities not needed</td><td><span class="tag match">matched</span></td><td>Not involved.</td></tr>
+      <tr><td>Vendor blocked by invoice 501</td><td><span class="tag diff">differed</span></td><td>The plan assumed a fresh DB per ticket. In the real sequence, 101 had already paid 501, so the vendor could ship. Cash ($160) was the only constraint.</td></tr>
+      <tr><td>Optional <code>list_inventory</code></td><td><span class="tag diff">used</span></td><td>Inventory checked other sizes, but none were offered (the club asked for M).</td></tr>
+      <tr><td>Draft offers 8 now or 20 at $49.30 later; end <code>blocked</code></td><td><span class="tag diff">differed</span></td><td>The draft offers only the 8 at list, and the ticket ended <b>resolved</b>, not blocked (see note). That is a firmer decision than the plan's open-ended "later".</td></tr>
+      <tr><td>~7 MCP calls</td><td><span class="tag diff">more</span></td><td>17 calls. Accounting priced three scenarios, and every specialist re-read the ticket. One run, no re-run needed, which makes it the most efficient ticket overall.</td></tr>
+    </table>
   </div>
 </section>
 
 <!-- ================================================================ Cash / Reflection -->
 <section role="tabpanel" id="panel-cash" aria-labelledby="tab-cash" hidden>
-  <div class="card placeholder">Coming later.</div>
+  <div class="card">
+    <h2>Cash reconciliation: checking account</h2>
+    <p class="muted">Only posted rows in <code>payments</code> count (each one linked to a human-approved <code>payment_requests</code> row). Agent messages and pending proposals are not cash. Arithmetic in exact decimals. Shop date 2026-08-31.</p>
+    <table>
+      <tr><th>Item</th><th>Transaction</th><th>Payee</th><th class="num">Approved amount</th><th>Approval reference</th><th class="num">Cash change</th><th class="num">Balance after</th></tr>
+      <tr><td>Starting balance</td><td>After database reset (audit marker seq 483), read from <code>cash_accounts</code></td><td>—</td><td>—</td><td>—</td><td class="num">$0.00</td><td class="num">$3,400.00</td></tr><tr><td>Ticket 101</td><td>Invoice 501: Rush reprint CC-TEE-WHITE S</td><td>Bulldog Print Co</td><td class="num">$840.00</td><td>request #1 → payment #1<br><span class="muted">approved by Ignacio Sanchez Urdaneta</span></td><td class="num">−$840.00</td><td class="num">$2,560.00</td></tr><tr><td>Ticket 102</td><td>Rent, Chapel Street shop (lease 1), due 2026-09-02</td><td>Elm City Properties</td><td class="num">$2,400.00</td><td>request #2 → payment #2<br><span class="muted">approved by Ignacio Sanchez Urdaneta</span></td><td class="num">−$2,400.00</td><td class="num">$160.00</td></tr><tr><td>Ticket 103</td><td>No payment or purchase. The 12-unit restock ($264.00) was not filed because it exceeded available cash.</td><td>—</td><td class="num">$0.00</td><td>none</td><td class="num">$0.00</td><td class="num">$160.00</td></tr><tr class="total"><td>Ending balance</td><td>Final database verification (<code>cash_accounts.balance</code>, checking)</td><td></td><td></td><td></td><td class="num">−$3,240.00</td><td class="num">$160.00</td></tr>
+    </table>
+
+    <h3>Net cash impact by ticket</h3>
+    <table>
+      <tr><th>Ticket</th><th>What moved</th><th class="num">Net change</th></tr>
+      <tr><td>101</td><td>Invoice 501 to Bulldog Print Co (releases the size S tee reprint)</td><td class="num">−$840.00</td></tr>
+      <tr><td>102</td><td>September rent to Elm City Properties</td><td class="num">−$2,400.00</td></tr>
+      <tr><td>103</td><td>Nothing: offer of 8 units from stock, no restock</td><td class="num">$0.00</td></tr>
+    </table>
+
+    <h3>Reconciliation</h3>
+    <p><code>Expected ending = Starting + Inflows − Outflows = $3,400.00 + $0.00 − $3,240.00 = $160.00</code></p>
+    <div class="recon">
+      <div><b>Starting balance</b><span>$3,400.00</span></div>
+      <div><b>Total inflows</b><span>$0.00</span></div>
+      <div><b>Total outflows</b><span>$3,240.00</span></div>
+      <div><b>Expected ending</b><span>$160.00</span></div>
+      <div><b>DB ending (cash_accounts)</b><span>$160.00</span></div>
+      <div class="zero"><b>Difference</b><span>$0.00</span></div>
+    </div>
+    <p class="muted" style="margin-top:12px">Checks: 2 payments posted, both linked to requests with status <code>paid</code> and a named approver. 0 payments without an approved request. 0 pending requests left. No transaction changed the balance without approval. The approval and verification records are in <code>output/audit_trail.json</code> (seq 527, 588, 648).</p>
+  </div>
 </section>
 
 <section role="tabpanel" id="panel-reflection" aria-labelledby="tab-reflection" hidden>

@@ -1,0 +1,267 @@
+{
+  "generated_from": {
+    "database": "data/campus_customs_new.db",
+    "audit_trail": "output/audit_trail.json",
+    "audit_seq_range": [
+      484,
+      648
+    ],
+    "reset_marker_seq": 483
+  },
+  "starting_balance": "3400.00",
+  "ending_balance": "160.00",
+  "tickets": [
+    {
+      "id": 101,
+      "final_status": "resolved",
+      "short_outcome": "Resolved. Invoice 501 ($840.00, the rush reprint of this exact tee) was paid after human approval, releasing the tee; no duplicate order. Updated draft #2 for Tauhid Zaman (not sent).",
+      "runs": [
+        {
+          "run_id": "run-b823e9ef",
+          "result": "interrupted (hung model request; backend reload)"
+        },
+        {
+          "run_id": "run-bd5cda7b",
+          "result": "finished: resolved"
+        }
+      ],
+      "first_specialist": "Inventory",
+      "agent_contributions": [
+        {
+          "agent": "Boss",
+          "role": "Read the ticket and linked invoice 501, sent stock and money questions to Inventory and Accounting, had Customer Service draft the reply, set waiting_approval; after the human paid invoice 501, had the draft updated and resolved the ticket.",
+          "delegations": [
+            {
+              "to": "Inventory",
+              "run_id": "run-b823e9ef",
+              "task": "For ticket 101, SKU CC-TEE-WHITE, size S, qty 1: report on-hand stock, whether we can fill now, any shortfall, and whether invoice 501's description 'Rush reprint CC-TEE-WHITE S' already covers this need. If replenishment is needed, identify vendor and lead time, noting vendor shipment constraints if known.",
+              "audit_seq": 490
+            },
+            {
+              "to": "Accounting",
+              "run_id": "run-b823e9ef",
+              "task": "For ticket 101, review linked vendor invoice 501: vendor_id 1, $840, due 2026-08-28, open, description 'Rush reprint CC-TEE-WHITE S'. Check cash/payment priority as of shop date 2026-08-31 and file the appropriate payment request if affordable; report request ID and implications for vendor shipment.",
+              "audit_seq": 491
+            },
+            {
+              "to": "Customer Service",
+              "run_id": "run-b823e9ef",
+              "task": "For ticket 101 / Tauhid Zaman, draft a customer-safe reply: we have no CC-TEE-WHITE size S in stock; the exact requested tee is already part of a reprint, so we will not place a duplicate order. The reprint cannot ship until invoice payment is approved and made; after payment, the vendor's lead time is 5 days. Make clear this is not yet paid and avoid promising a calendar delivery date.",
+              "audit_seq": 512
+            },
+            {
+              "to": "Customer Service",
+              "run_id": "run-bd5cda7b",
+              "task": "Ticket 101, requester Tauhid Zaman, one CC-TEE-WHITE size S. Invoice 501 ($840) for the exact size S reprint is now paid; inventory noted zero on hand and Bulldog Print Co has a 5-day lead time after payment. Please update/create the customer draft to say reprint payment is cleared and supplier lead time now begins, with no calendar delivery promise; ask if they want request kept with reprint. Do not mention vendor invoice/cash.",
+              "audit_seq": 536
+            }
+          ],
+          "mcp_tools_used": [
+            "get_ticket",
+            "update_ticket",
+            "list_drafts"
+          ]
+        },
+        {
+          "agent": "Inventory",
+          "role": "Confirmed size S is out of stock (short 1) and that open invoice 501 is the rush reprint of this exact tee, so no new order is needed.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_ticket",
+            "check_stock",
+            "get_vendor_status"
+          ]
+        },
+        {
+          "agent": "Accounting",
+          "role": "Checked the cash queue (rent first, invoice 501 still fits) and filed payment request #1 for $840.00 for human approval.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_cash_position",
+            "get_ticket",
+            "get_vendor_status",
+            "list_payment_requests",
+            "request_payment"
+          ]
+        },
+        {
+          "agent": "Customer Service",
+          "role": "Saved draft #1 (tee is in an existing reprint, no duplicate order) and, after payment, draft #2 (5-day lead time runs from payment). Neither sent.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_ticket",
+            "list_drafts",
+            "save_customer_draft"
+          ]
+        }
+      ],
+      "human_approvals": [
+        {
+          "approval_id": 1,
+          "payment_id": 1,
+          "kind": "invoice",
+          "description": "Invoice 501: Rush reprint CC-TEE-WHITE S (Bulldog Print Co)",
+          "amount": "840.00",
+          "requested_by": "Accounting",
+          "status": "approved",
+          "approved_by": "Ignacio Sanchez Urdaneta",
+          "posted": true
+        }
+      ],
+      "cash_change": "-840.00"
+    },
+    {
+      "id": 102,
+      "final_status": "resolved",
+      "short_outcome": "Resolved. Rent notice verified against lease 1; $2,400.00 rent paid to Elm City Properties after human approval; lease next due moved to 2026-10-02.",
+      "runs": [
+        {
+          "run_id": "run-6bb705ed",
+          "result": "finished: waiting_approval"
+        },
+        {
+          "run_id": "run-75d7e6ae",
+          "result": "failed (ModelAPIError) after Boss recorded resolved"
+        }
+      ],
+      "first_specialist": "Facilities",
+      "agent_contributions": [
+        {
+          "agent": "Boss",
+          "role": "Had Facilities verify the notice, then Accounting file the rent; set waiting_approval. On re-run saw request #2 paid and resolved the ticket (the run then failed on a gateway error after recording that).",
+          "delegations": [
+            {
+              "to": "Facilities",
+              "run_id": "run-6bb705ed",
+              "task": "For ticket 102, verify rent notice from Elm City Properties for lease 1 (Chapel Street shop): monthly rent $2,400, next_due 2026-09-02, against lease/landlord records. Report whether amount, due date, and landlord match; flag any discrepancy.",
+              "audit_seq": 560
+            },
+            {
+              "to": "Accounting",
+              "run_id": "run-6bb705ed",
+              "task": "For ticket 102, file the rent payment request for lease 1 / Chapel Street shop to Elm City Properties, $2,400 due 2026-09-02. Facilities verified landlord, amount, and due date. Cash position reported by Facilities: $2,560 on hand, so rent fits with $160 remaining. Report request ID and any approval requirements.",
+              "audit_seq": 572
+            }
+          ],
+          "mcp_tools_used": [
+            "get_ticket",
+            "update_ticket"
+          ]
+        },
+        {
+          "agent": "Facilities",
+          "role": "Verified the notice against lease 1: landlord Elm City Properties, $2,400, due 2026-09-02, 2 days out, covered by cash.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_ticket",
+            "get_rent_status"
+          ]
+        },
+        {
+          "agent": "Accounting",
+          "role": "Confirmed rent is priority 1 and fits, with nothing pending, and filed payment request #2 for $2,400.00.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_cash_position",
+            "get_ticket",
+            "list_payment_requests",
+            "get_rent_status",
+            "request_payment"
+          ]
+        }
+      ],
+      "human_approvals": [
+        {
+          "approval_id": 2,
+          "payment_id": 2,
+          "kind": "rent",
+          "description": "Rent, Chapel Street shop (lease 1) to Elm City Properties, due 2026-09-02",
+          "amount": "2400.00",
+          "requested_by": "Accounting",
+          "status": "approved",
+          "approved_by": "Ignacio Sanchez Urdaneta",
+          "posted": true
+        }
+      ],
+      "cash_change": "-2400.00"
+    },
+    {
+      "id": 103,
+      "final_status": "resolved",
+      "short_outcome": "Resolved. Only 8 of 20 size M hoodies in stock and the $264 restock exceeds the $160 left, so the club is offered the 8 at $58 each ($464), no discount. No payment; draft #3 (not sent).",
+      "runs": [
+        {
+          "run_id": "run-c3e982b0",
+          "result": "finished: resolved"
+        }
+      ],
+      "first_specialist": "Inventory",
+      "agent_contributions": [
+        {
+          "agent": "Boss",
+          "role": "Routed stock to Inventory, pricing and affordability to Accounting, the offer to Customer Service; decided to offer the 8 on hand at list and resolved.",
+          "delegations": [
+            {
+              "to": "Inventory",
+              "run_id": "run-c3e982b0",
+              "task": "For ticket 103, check availability of 20 units of SKU CC-HOOD-NAVY, size M. If short, give shortfall, whether alternate sizes are available, vendor/restock source, lead time, and any relevant open invoice that could cover these hoodies.",
+              "audit_seq": 605
+            },
+            {
+              "to": "Accounting",
+              "run_id": "run-c3e982b0",
+              "task": "Ticket 103: Yale AI Club requests 20 CC-HOOD-NAVY size M. Inventory reports 8 on hand, short 12; Bulldog Print Co can restock with 5-day lead, no open invoice constraint. Check list pricing and margin/policy for requested bulk discount (10+ units, cap 15%), determine whether restocking 12 is affordable under cash priority, and file an appropriate restock PO/payment request if feasible. Report amounts, IDs, and any pending human approval.",
+              "audit_seq": 617
+            },
+            {
+              "to": "Customer Service",
+              "run_id": "run-c3e982b0",
+              "task": "For ticket 103, draft a customer-safe reply to Yale AI Club: we can currently offer 8 CC-HOOD-NAVY size M hoodies at list price $58 each, total $464. We cannot fulfill the remaining 12 as part of this offer, and the available 8-unit order does not qualify for the bulk discount. Ask whether they want the 8 available units; do not promise restock timing or mention vendor, invoice, or cash.",
+              "audit_seq": 629
+            }
+          ],
+          "mcp_tools_used": [
+            "get_ticket",
+            "update_ticket"
+          ]
+        },
+        {
+          "agent": "Inventory",
+          "role": "Found 8 of 20 size M on hand (short 12), listed other sizes, and confirmed Bulldog Print Co can ship (5-day lead).",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_ticket",
+            "check_stock",
+            "list_inventory",
+            "get_vendor_status"
+          ]
+        },
+        {
+          "agent": "Accounting",
+          "role": "Priced 20 @ 15% (within policy), 8 @ 0% and 12 @ 15%; found the $264 restock exceeds the $160 cash ($104 short) and filed no purchase order.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_cash_position",
+            "get_pricing",
+            "get_vendor_status",
+            "list_payment_requests",
+            "get_ticket"
+          ]
+        },
+        {
+          "agent": "Customer Service",
+          "role": "Confirmed the $58 list price and saved draft #3 offering the 8 hoodies, no discount. Not sent.",
+          "delegations": [],
+          "mcp_tools_used": [
+            "get_ticket",
+            "list_drafts",
+            "get_pricing",
+            "save_customer_draft"
+          ]
+        }
+      ],
+      "human_approvals": [],
+      "cash_change": "0.00"
+    }
+  ]
+}
