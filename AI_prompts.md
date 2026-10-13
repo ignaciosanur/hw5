@@ -1384,3 +1384,26 @@ What was lacking after the first prompt: nothing on the code side. This confirme
 > yay it works now. I'm aligned with the feedback and judgments we wrote together. Ready for the next step? Make all edits finals
 
 What was lacking after the first prompt: the reflection was still marked as a draft pending my review; I reviewed it, agreed with the evaluations and judgments, and asked for it to be finalized.
+
+## Problem 11: Submit to GitHub
+
+### Initial prompt
+
+> Probelm 11: Submit to GitHub
+>
+> Push my code to a public GitHub repository so graders can clone it. Submit the repo URL to Canvas, and also put it in output/github_url.txt
+>
+> do not push the real .env to the GitHub repo. Do include both database files under data/ (the orignal and the working copy) so graders can run my app easily.
+>
+> expected layout (screenshot)
+>
+> README should explain: copy original DB to the working copy when you need a clean run, start MCP server, start FastAPI backend, start the React board, reset the DB before a full three-tickect run.
+
+(The prompt included two screenshots of the expected `hw5/` file layout: `AI_prompts.md`, `requirements.txt`, `.env.example`, `.gitignore`, `.mcp.json`, `README.md`, `data/` with both DBs, `mcp_server/server.py` + `README.md`, `frontend/`, `backend/main.py`, `backend/models.py`, `backend/prompts/` with the five agent prompts, and `output/` with `harness.md`, `mcp_smoke.json`, `desk_tickets.html`, `design.md`, `resolved_tickets.json`, `resolved_board.html`, `audit_trail.json`, `github_url.txt`.)
+
+### What we worked out before building
+
+- Renamed `mcp_server/mcp_server.py` to `mcp_server/server.py` to match the required layout, and updated every reference (backend config, `reset_db.py`, `.mcp.json`, docs).
+- Made `.mcp.json` portable with relative paths, so it works on a grader's clone and doesn't expose my local home path.
+- `.gitignore` now commits exactly the two databases and still blocks `.env`, the data zip and temp files.
+- The Canvas submission is mine to do; the vibe coder only prepared the repo and `output/github_url.txt`.

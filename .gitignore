@@ -4,8 +4,11 @@ __pycache__/
 *.pyc
 .DS_Store
 node_modules/
-data/
-*.db
+# Data: the two databases ARE committed so graders can run the app (Problem 11);
+# anything else in data/ (zip, temp reset files) stays out.
+data/*
+!data/campus_customs.db
+!data/campus_customs_new.db
 *.sqlite*
 dist/
 *.zip

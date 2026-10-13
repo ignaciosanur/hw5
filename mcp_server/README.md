@@ -1,6 +1,6 @@
 # Campus Customs MCP Server
 
-`mcp_server.py` is a FastMCP server named **`campus-customs-ops`**. It is the shared tool belt for the whole agent team: Boss, Inventory, Accounting, Facilities and Customer Service get all shop data through these tools instead of touching SQLite directly. Every answer comes from the database. If a row doesn't exist, the tool says so rather than guessing.
+`server.py` is a FastMCP server named **`campus-customs-ops`**. It is the shared tool belt for the whole agent team: Boss, Inventory, Accounting, Facilities and Customer Service get all shop data through these tools instead of touching SQLite directly. Every answer comes from the database. If a row doesn't exist, the tool says so rather than guessing.
 
 ## Database
 - Uses **`data/campus_customs_new.db`** (the working copy, resolved relative to the project root).
@@ -31,8 +31,8 @@ The backend gives each agent a filtered slice of these tools (see `backend/mcp_t
 
 ## Run
 ```bash
-.venv/bin/python mcp_server/mcp_server.py   # stdio MCP server
+.venv/bin/python mcp_server/server.py   # stdio MCP server
 ```
 
 ## Connect to the vibe coder
-The project-root `.mcp.json` registers this server for Claude Code as a stdio server named `campus-customs-ops` (command: the project's `.venv/bin/python`, arg: `mcp_server/mcp_server.py`). Opening the project in Claude Code loads it, and the tools appear as `mcp__campus-customs-ops__<tool>`. The Problem 4 test calls and their outputs are in `output/mcp_smoke.json`.
+The project-root `.mcp.json` registers this server for Claude Code as a stdio server named `campus-customs-ops` (command: the project's `.venv/bin/python`, arg: `mcp_server/server.py`). Opening the project in Claude Code loads it, and the tools appear as `mcp__campus-customs-ops__<tool>`. The Problem 4 test calls and their outputs are in `output/mcp_smoke.json`.

@@ -19,7 +19,7 @@ os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 
 PROMPTS_DIR = ROOT / "backend" / "prompts"
 AUDIT_PATH = ROOT / "output" / "audit_trail.json"
-MCP_SERVER_SCRIPT = ROOT / "mcp_server" / "mcp_server.py"
+MCP_SERVER_SCRIPT = ROOT / "mcp_server" / "server.py"
 # Working DB used by the API, the MCP server subprocess and reset. Tests override it with a temp copy.
 WORKING_DB = Path(os.getenv("CC_WORKING_DB") or ROOT / "data" / "campus_customs_new.db")
 

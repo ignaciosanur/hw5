@@ -14,7 +14,7 @@ ORIGINAL = DATA / "campus_customs.db"
 WORKING = Path(os.getenv("CC_WORKING_DB") or DATA / "campus_customs_new.db")
 
 sys.path.insert(0, str(ROOT / "mcp_server"))
-from mcp_server import EXTRA_TABLES  # noqa: E402  (one schema, shared with the server)
+from server import EXTRA_TABLES  # noqa: E402  (one schema, shared with the server)
 
 
 def reset_working_db() -> Path:

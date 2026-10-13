@@ -48,7 +48,7 @@ Engineering notes for the agent team, grown one problem at a time.
 
 ## Problem 3: The MCP server
 
-`mcp_server/mcp_server.py` is a FastMCP server named `campus-customs-ops`. It points at `data/campus_customs_new.db`, and every agent gets its data through it. All three tools are read-only, take "today" from `desk.date_today`, and return `found: false` with a message instead of inventing a row. Each was verified against the working DB through a FastMCP client (results below are real outputs).
+`mcp_server/server.py` is a FastMCP server named `campus-customs-ops`. It points at `data/campus_customs_new.db`, and every agent gets its data through it. All three tools are read-only, take "today" from `desk.date_today`, and return `found: false` with a message instead of inventing a row. Each was verified against the working DB through a FastMCP client (results below are real outputs).
 
 | Tool | Tables it reads | Ticket it unlocks | Why it's the right tool for that ticket |
 |---|---|---|---|
@@ -181,7 +181,7 @@ This section describes the system as built and verified in the Problem 9 end-to-
    │                 every loop node → output/audit_trail.json        │
    └─ POST /approve → MCP approve_and_pay (human-only tool) ─┐      │
                                                               ▼      ▼
-                    MCP server campus-customs-ops (mcp_server/mcp_server.py)
+                    MCP server campus-customs-ops (mcp_server/server.py)
                                                               │
                                                               ▼
                                       SQLite data/campus_customs_new.db

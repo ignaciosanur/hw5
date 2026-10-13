@@ -29,7 +29,8 @@ Add servers to `.claude/launch.json` (pattern in `../Lecture 07`) and start them
 ## Workflow (graded homework)
 - The user feeds the assignment one problem at a time. Discuss questions and suggestions before implementing; don't run ahead.
 - Keep `README.md` (setup/run steps, prompt-to-deliverable map) and `AI_prompts.md` (the user's verbatim prompts, per the `ai-prompts-log` skill).
-- **Never commit `data/` or the DB.** `.gitignore` blocks `data/`, `*.db`, `*.zip`. Run `git status` before any `git add`.
+- **Problem 11 changed this:** both DBs (`data/campus_customs.db`, `data/campus_customs_new.db`) ARE committed so graders can run the app. `.gitignore` allows exactly those two and still blocks the rest of `data/`, `*.zip` and `.env`. Run `git status` before any `git add`.
+- The MCP server file is `mcp_server/server.py` (renamed from `mcp_server.py` to match the required layout). `.mcp.json` uses relative paths (run from the repo root).
 
 ## Data — `data/campus_customs.db` (from `dataHw5.zip`, 53 KB)
 - **Original `data/campus_customs.db` is read-only (chmod 444) and must never be modified.**
@@ -69,7 +70,7 @@ An agentic team that runs the shop. Open tickets land on a board (customer order
 ## Backend (Problem 5)
 - Run: `.venv/bin/python -m backend.run_ticket all --reset` (or one ticket id). Appends to `output/audit_trail.json`, which must never be wiped.
 - Agents reach shop data only through the MCP server (`backend/mcp_tools.py`, stdio). Per-agent tool allow-lists live there; `approve_and_pay` / `reject_payment_request` are human-only and must never be added to an agent.
-- Delegation guards and token limits: `backend/config.py`. Shop policy constants (15% bulk cap for 10+ units, 7-day rent priority): top of `mcp_server/mcp_server.py`.
+- Delegation guards and token limits: `backend/config.py`. Shop policy constants (15% bulk cap for 10+ units, 7-day rent priority): top of `mcp_server/server.py`.
 
 ## API (Problem 7)
 - `backend/main.py` (FastAPI). Start **from `backend/`**: `uvicorn main:app --reload --port 8000` (venv active), which the assignment requires. `main.py` puts the project root on `sys.path` so `backend.*` and `reset_db` import from there. Reload watches only `backend/`, so audit and DB writes don't restart it. Preview: the `hw5-api` entry in `../.claude/launch.json` (the preview tools read that parent file). It runs `.venv/bin/python -m uvicorn` with absolute paths because the preview sandbox can't exec the `uvicorn` script or resolve `..`.
@@ -84,5 +85,5 @@ An agentic team that runs the shop. Open tickets land on a board (customer order
 
 ## Problem 9 end state (2026-10-12/13): do not disturb casually
 - The working DB holds the verified final run: tickets 101–103 `resolved`, payments #1 ($840) and #2 ($2,400) approved by the user, checking $160.00. Run window: audit seq 484–648 (reset marker 483).
-- Tests are isolated: `tests/conftest.py` sets `CC_WORKING_DB` to a temp file before importing the backend, so pytest never touches the graded DB or `output/audit_trail.json` (verified by md5). `CC_WORKING_DB` is read by `backend/config.py`, `mcp_server/mcp_server.py` (passed to the stdio subprocess via `env`) and `reset_db.py`.
+- Tests are isolated: `tests/conftest.py` sets `CC_WORKING_DB` to a temp file before importing the backend, so pytest never touches the graded DB or `output/audit_trail.json` (verified by md5). `CC_WORKING_DB` is read by `backend/config.py`, `mcp_server/server.py` (passed to the stdio subprocess via `env`) and `reset_db.py`.
 - Approvals must be clicked by the user, never by Claude.
