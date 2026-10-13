@@ -1,0 +1,15 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+data/
+*.db
+*.sqlite*
+dist/
+*.zip
+output/*.tmp
+.pytest_cache/
+*.corrupt.json
+.claude/settings.local.json

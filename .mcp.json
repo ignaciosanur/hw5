@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "campus-customs-ops": {
+      "type": "stdio",
+      "command": "/Users/ignaciosanchezurdaneta/Desktop/YALE/AI_Foundations/AI for Managers/Homework 05/.venv/bin/python",
+      "args": [
+        "/Users/ignaciosanchezurdaneta/Desktop/YALE/AI_Foundations/AI for Managers/Homework 05/mcp_server/mcp_server.py"
+      ]
+    }
+  }
+}

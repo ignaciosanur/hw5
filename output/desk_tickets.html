@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Customs: Desk Tickets</title>
+<style>
+  :root {
+    --navy: #0f2a4a; --ink: #1d2733; --muted: #5d6b7a; --line: #dde3ea; --bg: #f5f7fa; --card: #fff;
+    --req: #1f6f43; --req-bg: #e6f4ec; --opt: #8a5a00; --opt-bg: #fdf3dc; --skip: #6b7280; --skip-bg: #eef0f3;
+    --accent: #2563eb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  header { background: var(--navy); color: #fff; padding: 22px 32px 0; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .2px; }
+  header p { margin: 4px 0 16px; color: #c4d2e3; font-size: 13.5px; }
+  header code { background: rgba(255,255,255,.14); color: #fff; }
+  [role="tablist"] { display: flex; gap: 4px; flex-wrap: wrap; }
+  [role="tab"] { border: 0; background: transparent; color: #c4d2e3; padding: 10px 18px; font: inherit; font-weight: 600;
+    border-radius: 8px 8px 0 0; cursor: pointer; }
+  [role="tab"]:hover { color: #fff; background: rgba(255,255,255,.08); }
+  [role="tab"][aria-selected="true"] { background: var(--bg); color: var(--navy); }
+  [role="tab"]:focus-visible { outline: 2px solid #9cc2ff; outline-offset: -2px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 32px 60px; }
+  [role="tabpanel"][hidden] { display: none; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 20px; margin: 10px 0 0; }
+  .facts div { font-size: 13.5px; } .facts b { display: block; color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; }
+  h2 { margin: 0 0 4px; font-size: 19px; color: var(--navy); }
+  h3 { margin: 22px 0 8px; font-size: 15.5px; color: var(--navy); }
+  h3:first-of-type { margin-top: 6px; }
+  .section-label { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 99px; margin-bottom: 10px; }
+  .expected .section-label { background: #e0ebff; color: var(--accent); }
+  .actual .section-label { background: var(--skip-bg); color: var(--skip); }
+  .actual { min-height: 120px; border-style: dashed; }
+  .first { border-left: 4px solid var(--accent); background: #f4f8ff; padding: 12px 16px; border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+  td:first-child { white-space: nowrap; font-weight: 700; color: var(--muted); }
+  code { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: #f0f3f7; padding: 1px 5px; border-radius: 4px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .req { background: var(--req-bg); color: var(--req); } .opt { background: var(--opt-bg); color: var(--opt); } .skip { background: var(--skip-bg); color: var(--skip); }
+  ul { margin: 6px 0; padding-left: 20px; } li { margin: 3px 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .outcome { background: #f7faf8; border: 1px solid #d5eadd; border-radius: 8px; padding: 10px 14px; }
+  .placeholder { text-align: center; color: var(--muted); padding: 60px 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Campus Customs: Desk Tickets</h1>
+  <p>Problem 6 execution plan · shop date 2026-08-31 · baseline is a fresh <code>reset_db.py</code> working copy (cash $3,400, no payment requests yet)</p>
+  <div role="tablist" aria-label="Desk tickets">
+    <button role="tab" id="tab-101" aria-controls="panel-101" aria-selected="true">Ticket 101</button>
+    <button role="tab" id="tab-102" aria-controls="panel-102" aria-selected="false" tabindex="-1">Ticket 102</button>
+    <button role="tab" id="tab-103" aria-controls="panel-103" aria-selected="false" tabindex="-1">Ticket 103</button>
+    <button role="tab" id="tab-cash" aria-controls="panel-cash" aria-selected="false" tabindex="-1">Cash</button>
+    <button role="tab" id="tab-reflection" aria-controls="panel-reflection" aria-selected="false" tabindex="-1">Reflection</button>
+  </div>
+</header>
+
+<main>
+<!-- ================================================================ 101 -->
+<section role="tabpanel" id="panel-101" aria-labelledby="tab-101">
+  <div class="card">
+    <h2>Ticket 101 · Bulldog tee (customer order)</h2>
+    <div class="facts">
+      <div><b>Requester</b>Tauhid Zaman</div>
+      <div><b>Item</b>CC-TEE-WHITE, size S, qty 1</div>
+      <div><b>Linked</b>invoice 501 ($840, Bulldog Print Co, due 2026-08-28, "Rush reprint CC-TEE-WHITE S")</div>
+      <div><b>Note</b>"Needs a tee in size S."</div>
+    </div>
+  </div>
+
+  <div class="card expected">
+    <span class="section-label">Expected</span>
+
+    <h3>1. Initial action</h3>
+    <div class="first">
+      <p style="margin:0">The Boss calls <code>get_ticket(101)</code>, then delegates to <b>Inventory</b> first.</p>
+      <p style="margin:6px 0 0">This is a customer order, so the first question is whether the shelf can fill it. If the tee is in stock, no money or vendor work is needed at all. The linked invoice is a hint that it may not be.</p>
+    </div>
+
+    <h3>2. Agent delegations (in order)</h3>
+    <table>
+      <tr><th>#</th><th>Agent</th><th></th><th>Task</th><th>Expected finding</th></tr>
+      <tr><td>1</td><td>Inventory</td><td><span class="tag req">Required</span></td>
+        <td>Check the size S tee. If short, find who restocks it and whether they can ship.</td>
+        <td>0 on hand, short 1. Bulldog Print Co (apparel reprint, 5-day lead) <b>can't ship</b>: invoice 501 is open and 3 days past due. That invoice is the rush reprint of this exact tee, so no new order is needed.</td></tr>
+      <tr><td>2</td><td>Accounting</td><td><span class="tag req">Required</span></td>
+        <td>Can we afford invoice 501 after higher priorities? If so, file it for approval.</td>
+        <td>Rent ($2,400, due in 2 days) comes first. 501 still fits: $3,400 − $2,400 − $840 = $160. Accounting files an invoice payment request for $840. Only this needs approval. No purchase order.</td></tr>
+      <tr><td>3</td><td>Customer Service</td><td><span class="tag req">Required</span></td>
+        <td>Draft a reply to Tauhid: size S is out, a reprint is coming (~5 days once confirmed). Optionally mention sizes M, L and XL are in stock.</td>
+        <td>One draft, no vendor name, invoice or cash details, no fixed date.</td></tr>
+      <tr><td>·</td><td>Facilities</td><td><span class="tag skip">Not needed</span></td><td colspan="2">No lease or rent involved.</td></tr>
+    </table>
+
+    <h3>3. MCP tool usage</h3>
+    <table>
+      <tr><th>Agent</th><th>Tool call</th><th>What it provides</th></tr>
+      <tr><td>Boss</td><td><code>get_ticket(101)</code></td><td>SKU, size, qty and the linked invoice 501 row.</td></tr>
+      <tr><td>Inventory</td><td><code>check_stock("CC-TEE-WHITE", "S", 1)</code></td><td>qty 0 (Aisle B), shortfall 1, <code>can_fill_from_stock: false</code>.</td></tr>
+      <tr><td>Inventory</td><td><code>get_vendor_status()</code></td><td>Matches apparel to Bulldog Print Co by specialty. Shows invoice 501 open, <code>can_ship: false</code>, lead 5 days.</td></tr>
+      <tr><td>Inventory</td><td><code>list_inventory("CC-TEE-WHITE")</code> <span class="tag opt">Optional</span></td><td>Only if offering another size: M 5, L 3, XL 2.</td></tr>
+      <tr><td>Accounting</td><td><code>get_cash_position()</code></td><td>Payment queue: rent first, then 501. Both fit, leaving $160. Also shows nothing is already pending.</td></tr>
+      <tr><td>Accounting</td><td><code>request_payment(kind="invoice", ref_id=501, ticket_id=101)</code></td><td>Pending request for $840. No money moves.</td></tr>
+      <tr><td>Customer Service</td><td><code>save_customer_draft(101, ...)</code></td><td>Draft to Tauhid Zaman, saved, not sent.</td></tr>
+      <tr><td>Boss</td><td><code>update_ticket(101, "waiting_approval", ...)</code></td><td>Records the decision on the board.</td></tr>
+    </table>
+    <p class="outcome"><b>Expected end state:</b> <code>waiting_approval</code> · 3 specialists · about 7 MCP calls (8 with the optional size check) · waiting on a human to approve the $840 request and send the draft.</p>
+  </div>
+
+  <div class="card actual">
+    <span class="section-label">Actual</span>
+  </div>
+</section>
+
+<!-- ================================================================ 102 -->
+<section role="tabpanel" id="panel-102" aria-labelledby="tab-102" hidden>
+  <div class="card">
+    <h2>Ticket 102 · Rent due (rent notice)</h2>
+    <div class="facts">
+      <div><b>Requester</b>Elm City Properties</div>
+      <div><b>Linked</b>lease 1, Chapel Street shop</div>
+      <div><b>Note</b>"Email: shop rent due in 2 days."</div>
+      <div><b>Not stated</b>amount (the lease is the source)</div>
+    </div>
+  </div>
+
+  <div class="card expected">
+    <span class="section-label">Expected</span>
+
+    <h3>1. Initial action</h3>
+    <div class="first">
+      <p style="margin:0">The Boss calls <code>get_ticket(102)</code>, then delegates to <b>Facilities</b> first.</p>
+      <p style="margin:6px 0 0">A rent request is a request for money, so before anyone files a payment, Facilities checks the notice against the lease: the right landlord, the right amount and the right due date. That check is the guard against a fake "pay rent" email.</p>
+    </div>
+
+    <h3>2. Agent delegations (in order)</h3>
+    <table>
+      <tr><th>#</th><th>Agent</th><th></th><th>Task</th><th>Expected finding</th></tr>
+      <tr><td>1</td><td>Facilities</td><td><span class="tag req">Required</span></td>
+        <td>Verify the notice against lease 1.</td>
+        <td>The requester matches the landlord on file. $2,400 is due 2026-09-02, 2 days after the shop date, so it is not overdue. Cash covers it ($1,000 left).</td></tr>
+      <tr><td>2</td><td>Accounting</td><td><span class="tag req">Required</span></td>
+        <td>File the rent for approval. This can come from Facilities directly or from the Boss after step 1.</td>
+        <td>Rent due within 7 days is priority 1. Files a rent payment request for $2,400.</td></tr>
+      <tr><td>·</td><td>Customer Service</td><td><span class="tag opt">Optional</span></td><td colspan="2">Only if the Boss wants a short acknowledgement to the landlord. It must not say the rent is paid. The notice doesn't ask for a reply, so the default is to skip it.</td></tr>
+      <tr><td>·</td><td>Inventory</td><td><span class="tag skip">Not needed</span></td><td colspan="2">No product involved.</td></tr>
+    </table>
+
+    <h3>3. MCP tool usage</h3>
+    <table>
+      <tr><th>Agent</th><th>Tool call</th><th>What it provides</th></tr>
+      <tr><td>Boss</td><td><code>get_ticket(102)</code></td><td>Requester and <code>lease_id = 1</code>, plus the linked lease row.</td></tr>
+      <tr><td>Facilities</td><td><code>get_rent_status(1)</code></td><td>Landlord, $2,400, next due 2026-09-02, <code>days_until_due: 2</code>, cash $3,400 → $1,000 after.</td></tr>
+      <tr><td>Facilities</td><td><code>list_payment_requests()</code> <span class="tag opt">Optional</span></td><td>Confirms no rent request is already pending, to avoid a duplicate. The server also refuses duplicates.</td></tr>
+      <tr><td>Accounting</td><td><code>get_cash_position()</code></td><td>Rent sits at the top of the queue and fits.</td></tr>
+      <tr><td>Accounting</td><td><code>request_payment(kind="rent", ref_id=1, ticket_id=102)</code></td><td>Pending request for $2,400. Amount comes from the lease. No money moves.</td></tr>
+      <tr><td>Boss</td><td><code>update_ticket(102, "waiting_approval", ...)</code></td><td>Records the decision.</td></tr>
+    </table>
+    <p class="outcome"><b>Expected end state:</b> <code>waiting_approval</code> · 2 specialists · about 5 MCP calls · waiting on a human to approve the $2,400 rent. Paying it would move the lease's next due date to 2026-10-02.</p>
+  </div>
+
+  <div class="card actual">
+    <span class="section-label">Actual</span>
+  </div>
+</section>
+
+<!-- ================================================================ 103 -->
+<section role="tabpanel" id="panel-103" aria-labelledby="tab-103" hidden>
+  <div class="card">
+    <h2>Ticket 103 · Bulk hoodie discount (price override)</h2>
+    <div class="facts">
+      <div><b>Requester</b>Yale AI Club</div>
+      <div><b>Item</b>CC-HOOD-NAVY, size M, qty 20</div>
+      <div><b>Ask</b>a bulk discount (no % stated)</div>
+      <div><b>Policy</b>10+ units: up to 15% off list. Under 10: none.</div>
+    </div>
+  </div>
+
+  <div class="card expected">
+    <span class="section-label">Expected</span>
+
+    <h3>1. Initial action</h3>
+    <div class="first">
+      <p style="margin:0">The Boss calls <code>get_ticket(103)</code>, then delegates to <b>Inventory</b> first.</p>
+      <p style="margin:6px 0 0">It looks like a pricing ticket, but a discount on 20 hoodies only matters if we can supply 20. The stock answer decides whether this is a full order, a partial one, or a restock question. That changes what Accounting has to price.</p>
+    </div>
+
+    <h3>2. Agent delegations (in order)</h3>
+    <table>
+      <tr><th>#</th><th>Agent</th><th></th><th>Task</th><th>Expected finding</th></tr>
+      <tr><td>1</td><td>Inventory</td><td><span class="tag req">Required</span></td>
+        <td>Check 20 × size M. If short, say who restocks and whether they can ship.</td>
+        <td>8 on hand, short 12. The restock vendor, Bulldog Print Co, <b>can't ship</b> while invoice 501 is open.</td></tr>
+      <tr><td>2</td><td>Accounting</td><td><span class="tag req">Required</span></td>
+        <td>Price 20 units at the policy maximum and check whether a 12-unit restock is affordable after higher priorities.</td>
+        <td>15% is within policy: $49.30/unit, $986 total, $27.30/unit margin. Restock = 12 × $22 = $264, but after rent and 501 only $160 is left, so <b>no purchase order is filed</b>. The 8 on hand alone don't qualify for the discount (under 10).</td></tr>
+      <tr><td>3</td><td>Customer Service</td><td><span class="tag req">Required</span></td>
+        <td>Draft a reply to the club with the options: 8 now at list ($58), or the full 20 at $49.30 once a restock is possible. No date is promised.</td>
+        <td>One draft, no cash, invoice or vendor details.</td></tr>
+      <tr><td>·</td><td>Facilities</td><td><span class="tag skip">Not needed</span></td><td colspan="2">No lease or rent involved.</td></tr>
+    </table>
+
+    <h3>3. MCP tool usage</h3>
+    <table>
+      <tr><th>Agent</th><th>Tool call</th><th>What it provides</th></tr>
+      <tr><td>Boss</td><td><code>get_ticket(103)</code></td><td>SKU, size, qty 20. No linked invoice or lease.</td></tr>
+      <tr><td>Inventory</td><td><code>check_stock("CC-HOOD-NAVY", "M", 20)</code></td><td>qty 8 (Aisle A), shortfall 12.</td></tr>
+      <tr><td>Inventory</td><td><code>get_vendor_status()</code></td><td>Bulldog Print Co (apparel) has invoice 501 open, so <code>can_ship: false</code>, lead 5 days.</td></tr>
+      <tr><td>Inventory</td><td><code>list_inventory("CC-HOOD-NAVY")</code> <span class="tag opt">Optional</span></td><td>Only if the club might take mixed sizes (S 4, L 14, XL 6). It never substitutes on its own.</td></tr>
+      <tr><td>Accounting</td><td><code>get_pricing("CC-HOOD-NAVY", 20, 15)</code></td><td>Cap 15%, <code>within_policy: true</code>, $49.30/unit, $986 total, margin 55.4%.</td></tr>
+      <tr><td>Accounting</td><td><code>get_cash_position()</code></td><td>Queue: rent $2,400 → invoice 501 $840 → $160 left. That is $104 short of a $264 restock.</td></tr>
+      <tr><td>Customer Service</td><td><code>save_customer_draft(103, ...)</code></td><td>Draft to Yale AI Club, saved, not sent.</td></tr>
+      <tr><td>Boss</td><td><code>update_ticket(103, "blocked", ...)</code></td><td>Blocked: the restock can't be funded or shipped yet, and the club needs to choose an option.</td></tr>
+    </table>
+    <p class="outcome"><b>Expected end state:</b> <code>blocked</code> · 3 specialists · about 7 MCP calls (8 with the optional size check) · no payment request filed · waiting on the club's choice, and on 501 being paid plus more cash before any restock.</p>
+  </div>
+
+  <div class="card actual">
+    <span class="section-label">Actual</span>
+  </div>
+</section>
+
+<!-- ================================================================ Cash / Reflection -->
+<section role="tabpanel" id="panel-cash" aria-labelledby="tab-cash" hidden>
+  <div class="card placeholder">Coming later.</div>
+</section>
+
+<section role="tabpanel" id="panel-reflection" aria-labelledby="tab-reflection" hidden>
+  <div class="card placeholder">Coming later.</div>
+</section>
+</main>
+
+<script>
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  function select(tab) {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    history.replaceState(null, '', '#' + tab.id.replace('tab-', ''));
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', e => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (step) { const n = tabs[(i + step + tabs.length) % tabs.length]; n.focus(); select(n); }
+    });
+  });
+  const start = document.getElementById('tab-' + location.hash.slice(1));
+  if (start) select(start);
+</script>
+</body>
+</html>
