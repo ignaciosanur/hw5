@@ -78,7 +78,7 @@ An agentic team that runs the shop. Open tickets land on a board (customer order
 - Tests: `.venv/bin/python -m pytest -q` (offline, temp DB + temp audit file). `RUN_LIVE=1` adds one real agent run (~1–3 min; model latency varies, occasional 60–90s Boss calls).
 
 ## Dashboard (Problem 8)
-- `frontend/` (React 19 + Vite 8 + TS, plain CSS, lucide-react, IBM Plex via @fontsource). `npm run dev` serves http://localhost:5173 (strictPort). Preview entry `hw5-web` in `../.claude/launch.json`.
+- `frontend/` (React 19 + Vite 8 + TS, plain CSS, lucide-react, IBM Plex via @fontsource). `npm run dev` serves http://localhost:5173 and http://127.0.0.1:5173 (Vite binds 127.0.0.1; with host "localhost" it bound only IPv6 ::1 and 127.0.0.1 refused). strictPort. Preview entry `hw5-web` in `../.claude/launch.json`.
 - Polls the API: 1.5s while a ticket runs, 8s idle; events are incremental via `after_seq`. Clears its event cache when `/api/health.last_reset_seq` changes.
 - The backend's `--reload` only watches `backend/*.py`. **Restart the backend after editing `mcp_server/` or `backend/prompts/*.md`.**
 
