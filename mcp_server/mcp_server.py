@@ -11,6 +11,7 @@ Money rules live here, not in the prompts, so no agent can talk its way around t
   gives them to an agent. Paying refuses if cash would go negative.
 """
 import calendar
+import os
 import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
@@ -18,7 +19,8 @@ from pathlib import Path
 from fastmcp import FastMCP
 
 ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = ROOT / "data" / "campus_customs_new.db"
+# CC_WORKING_DB lets tests point the server at a throwaway copy; default is the real working DB.
+DB_PATH = Path(os.getenv("CC_WORKING_DB") or ROOT / "data" / "campus_customs_new.db")
 
 # Shop policy (set by the owner for Problem 5).
 MAX_BULK_DISCOUNT_PCT = 15.0   # largest discount anyone may offer

@@ -305,3 +305,5 @@ CORS allows only `FRONTEND_URL`, `http://localhost:5173` and `http://127.0.0.1:5
 - `currency` is not stored.
 - In Problem 9, two model calls failed at the gateway: one hung until the new timeout fix, and one returned connection errors after the Boss had already recorded its decision. Neither lost data, and both are documented.
 - Agents re-read the ticket in every specialist, so tool-call counts ran 2–3× the plan.
+- Model latency is uneven: most calls take 3–11s, but the Boss occasionally needs 60–90s on its final step. Requests time out at 90s and are retried twice.
+- Tests run against a throwaway DB (`CC_WORKING_DB`), so `pytest` never disturbs the graded data: 13 offline tests plus 1 live agent test pass.

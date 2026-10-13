@@ -2,9 +2,9 @@
 (agents propose, approve_and_pay pays), so this module opens the DB in read-only mode."""
 import sqlite3
 
-from backend.config import ROOT
+from backend.config import WORKING_DB
 
-DB_PATH = ROOT / "data" / "campus_customs_new.db"
+DB_PATH = WORKING_DB
 
 
 class DatabaseUnavailable(RuntimeError):

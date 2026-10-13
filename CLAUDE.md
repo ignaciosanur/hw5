@@ -75,15 +75,14 @@ An agentic team that runs the shop. Open tickets land on a board (customer order
 - `backend/main.py` (FastAPI). Start **from `backend/`**: `uvicorn main:app --reload --port 8000` (venv active), which the assignment requires. `main.py` puts the project root on `sys.path` so `backend.*` and `reset_db` import from there. Reload watches only `backend/`, so audit and DB writes don't restart it. Preview: the `hw5-api` entry in `../.claude/launch.json` (the preview tools read that parent file). It runs `.venv/bin/python -m uvicorn` with absolute paths because the preview sandbox can't exec the `uvicorn` script or resolve `..`.
 - Money moves only through `POST /api/approvals/{id}/approve` → MCP `approve_and_pay` (takes `BEGIN IMMEDIATE` before checking status, so double-clicks can't double-pay).
 - Reset never deletes events: it appends a `reset` marker and `/api/events` shows only what comes after it.
-- Tests: `.venv/bin/python -m pytest -q` (offline, writes events to a temp file). `RUN_LIVE=1` adds one real agent run.
+- Tests: `.venv/bin/python -m pytest -q` (offline, temp DB + temp audit file). `RUN_LIVE=1` adds one real agent run (~1–3 min; model latency varies, occasional 60–90s Boss calls).
 
 ## Dashboard (Problem 8)
 - `frontend/` (React 19 + Vite 8 + TS, plain CSS, lucide-react, IBM Plex via @fontsource). `npm run dev` serves http://localhost:5173 (strictPort). Preview entry `hw5-web` in `../.claude/launch.json`.
 - Polls the API: 1.5s while a ticket runs, 8s idle; events are incremental via `after_seq`. Clears its event cache when `/api/health.last_reset_seq` changes.
 - The backend's `--reload` only watches `backend/*.py`. **Restart the backend after editing `mcp_server/` or `backend/prompts/*.md`.**
-- Running pytest resets the working DB and appends a `reset` marker to the real audit trail (so the dashboard feed stays consistent).
 
 ## Problem 9 end state (2026-10-12/13): do not disturb casually
 - The working DB holds the verified final run: tickets 101–103 `resolved`, payments #1 ($840) and #2 ($2,400) approved by the user, checking $160.00. Run window: audit seq 484–648 (reset marker 483).
-- **Running `pytest` resets the DB** (wiping this end state). Back up `data/campus_customs_new.db` first if tests are needed.
+- Tests are isolated: `tests/conftest.py` sets `CC_WORKING_DB` to a temp file before importing the backend, so pytest never touches the graded DB or `output/audit_trail.json` (verified by md5). `CC_WORKING_DB` is read by `backend/config.py`, `mcp_server/mcp_server.py` (passed to the stdio subprocess via `env`) and `reset_db.py`.
 - Approvals must be clicked by the user, never by Claude.

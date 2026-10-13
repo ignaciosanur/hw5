@@ -167,7 +167,7 @@ def test_live_run_ticket_102(fresh):
     run_id = r.json()["run_id"]
     assert fresh.post("/api/tickets/102/run").status_code == 409            # no duplicate run
     assert fresh.get("/api/cash").status_code == 200                         # API stays responsive mid-run
-    deadline = time.time() + 300
+    deadline = time.time() + 600  # model latency varies (occasional 60-90s calls); this checks correctness, not speed
     while (run := fresh.get(f"/api/runs/{run_id}").json())["status"] == "running":
         assert time.time() < deadline, "run took too long"
         time.sleep(2)

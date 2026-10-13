@@ -8,7 +8,7 @@ import sys
 from fastmcp.client.transports import PythonStdioTransport
 from pydantic_ai.mcp import MCPToolset
 
-from backend.config import MCP_SERVER_SCRIPT
+from backend.config import MCP_SERVER_SCRIPT, WORKING_DB
 
 HUMAN_ONLY_TOOLS = {"approve_and_pay", "reject_payment_request"}
 
@@ -23,7 +23,8 @@ ROLE_TOOLS: dict[str, set[str]] = {
 }
 assert not any(tools & HUMAN_ONLY_TOOLS for tools in ROLE_TOOLS.values()), "agents must never pay"
 
-shop_mcp = MCPToolset(PythonStdioTransport(script_path=MCP_SERVER_SCRIPT, python_cmd=sys.executable),
+shop_mcp = MCPToolset(PythonStdioTransport(script_path=MCP_SERVER_SCRIPT, python_cmd=sys.executable,
+                                          env={"CC_WORKING_DB": str(WORKING_DB)}),
                       id="campus-customs-ops")
 
 

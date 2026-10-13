@@ -20,6 +20,8 @@ os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 PROMPTS_DIR = ROOT / "backend" / "prompts"
 AUDIT_PATH = ROOT / "output" / "audit_trail.json"
 MCP_SERVER_SCRIPT = ROOT / "mcp_server" / "mcp_server.py"
+# Working DB used by the API, the MCP server subprocess and reset. Tests override it with a temp copy.
+WORKING_DB = Path(os.getenv("CC_WORKING_DB") or ROOT / "data" / "campus_customs_new.db")
 
 MODEL_NAME = os.getenv("OPENAI_MODEL", "")
 PORTKEY_BASE_URL = (os.getenv("PORTKEY_BASE_URL") or "https://api.portkey.ai/v1").rstrip("/")
@@ -33,7 +35,7 @@ TEAM_LIMITS = UsageLimits(
 MAX_DELEGATION_DEPTH = 3       # boss -> A -> B -> C, no deeper
 MAX_DELEGATIONS_PER_TICKET = 8
 AUDIT_CLIP_CHARS = 1500        # long tool outputs are clipped in the audit trail
-MODEL_TIMEOUT_S = 90           # per model request; retried up to 2 times
+MODEL_TIMEOUT_S = 90           # per model request; most calls take 3-11s but the Boss sometimes thinks 60-90s on its final step; retried up to 2 times
 
 
 @lru_cache(maxsize=1)

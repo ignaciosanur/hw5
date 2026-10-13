@@ -1,15 +1,26 @@
+"""Test isolation: the suite never touches the graded working DB or the real audit trail.
+
+CC_WORKING_DB is set to a throwaway file *before* the backend is imported, so the API,
+the MCP server subprocess and reset_db.py all use the temp copy.
+"""
 import os
 import sys
+import tempfile
 from pathlib import Path
 
-import pytest
-from fastapi.testclient import TestClient
-
 ROOT = Path(__file__).resolve().parent.parent
+REAL_DB = (ROOT / "data" / "campus_customs_new.db").resolve()
+TMP = Path(tempfile.mkdtemp(prefix="cc-tests-"))
+os.environ["CC_WORKING_DB"] = str(TMP / "campus_customs_test.db")
 sys.path.insert(0, str(ROOT))
 
-from backend import audit  # noqa: E402
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from backend import audit, config  # noqa: E402
 import backend.main as main  # noqa: E402
+
+assert config.WORKING_DB.resolve() != REAL_DB, "tests must not use the real working DB"
 
 
 def pytest_configure(config):
@@ -25,18 +36,13 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session")
-def client(tmp_path_factory):
-    # Tests write their events to a scratch file, never to the graded output/audit_trail.json.
-    real_trail = audit.AUDIT_PATH
-    trail = tmp_path_factory.mktemp("audit") / "audit_trail.json"
+def client():
+    # Events go to a scratch file, never to the graded output/audit_trail.json.
+    trail = TMP / "audit_trail.json"
     audit.AUDIT_PATH = trail
     main.AUDIT_PATH = trail
     with TestClient(main.app) as c:
         yield c
-        # Leave the working DB seeded, and record that reset in the REAL trail so the
-        # dashboard's feed (events since the last reset) matches the DB again.
-        audit.AUDIT_PATH = main.AUDIT_PATH = real_trail
-        c.post("/api/reset")
 
 
 @pytest.fixture
